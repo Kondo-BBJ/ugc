@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UGC PBI</title>
+    <link rel="icon" type="image/png" href="UGC-logoS.png">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --header-footer-bg: #CDE2ED; 
+            --text-color-light: #34495e; 
+            --text-color-dark: #34495e;
+            --content-bg: #f9f9f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color-dark);
+            padding-top: 40px; /* Adjusted for a narrower header */
+        }
+
+        /* --- Header & Navigation --- */
+        header {
+            background: var(--header-footer-bg);
+            color: var(--text-color-light);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 10px; /* Made the header narrower */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .logo img {
+            height: 20px; /* Reduced logo size */
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .nav-menu {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            font-size: 0.8rem; /* Reduced font size */
+        }
+
+        .nav-menu li {
+            margin-left: 10px; /* Reduced spacing */
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--text-color-light);
+            font-weight: 500;
+            padding: 5px; 
+            transition: color 0.3s;
+        }
+
+        .nav-menu a:hover {
+            color: var(--primary-color);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            height: 3px;
+            width: 25px;
+            background: var(--text-color-light);
+            margin: 4px 0;
+            transition: 0.3s;
+        }
+
+        /* Submenu Styling */
+        .nav-menu li {
+            position: relative;
+        }
+
+        .submenu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--header-footer-bg);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 5px; /* Reduced submenu padding */
+            list-style: none;
+            z-index: 999;
+            min-width: 120px; /* Reduced min-width */
+        }
+
+        .submenu li {
+            margin-left: 0;
+        }
+
+        .submenu a {
+            color: var(--text-color-light);
+            display: block;
+            padding: 3px 5px; /* Reduced submenu link padding */
+            white-space: nowrap;
+        }
+
+        .nav-menu li:hover .submenu {
+            display: block;
+        }
+
+        /* --- Main Content --- */
+        #content {
+            padding: 0px;
+            background: var(--content-bg);
+            min-height: calc(100vh - 45px); /* Adjusted for a narrower header/footer */
+        }
+
+        #content iframe {
+            width: 100%;
+            height: calc(100vh - 45px);
+            border: none;
+        }
+
+        /* --- Footer --- */
+        footer {
+            background: var(--header-footer-bg);
+            color: var(--text-color-light);
+            text-align: center;
+            padding: 5px; /* Made the footer narrower */
+        }
+
+        footer p {
+            font-size: 0.8rem; /* Reduced font size */
+            margin: 0;
+        }
+        
+        /* Removed social icons styles */
+
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                background: var(--header-footer-bg);
+                position: absolute;
+                top: 40px; /* Adjusted for narrower header */
+                left: 0;
+                padding: 10px 0;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .nav-menu li {
+                margin: 5px 0; /* Reduced spacing */
+                text-align: center;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-menu.active .submenu {
+                position: static;
+                width: 100%;
+                box-shadow: none;
+                padding-left: 10px; /* Reduced padding */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+    <div class="logo">
+	<a href="#home">
+        <img src="UGC-logoS.png" alt="Company Logo">
+	</a>
+    </div>
+    <nav>
+        <ul class="nav-menu">
+            <li>
+                <a href="#weather">Weather</a>
+                <ul class="submenu">
+                    <li><a href="#daily-weather">Daily</a></li>
+                    <li><a href="#monthly-weather">Monthly</a></li>
+                    <li><a href="#soil-moisture">Soil Moisture</a></li>
+                    <li><a href="#extreme-weather">Extreme Weather</a></li>
+                    <li><a href="#us-outlook-maps">US Outlook Maps</a></li>
+                    <li><a href="#climate-change">Climate Change</a></li>
+                    <li><a href="#weather-data">Weather Data</a></li>
+                    <li><a href="#oni">Oceanic Niño Index</a></li>
+                    <li><a href="#enso-map">ENSO Map</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#progress-conditions">Progress & Conditions</a>
+                <ul class="submenu">
+                    <li><a href="#us-crop-progress">US Crop Progress</a></li>
+                    <li><a href="#conditions-corn">Conditions - Corn</a></li>
+                    <li><a href="#conditions-soybeans">Conditions - Soybeans</a></li>
+                    <li><a href="#conditions-spring-wheat">Conditions - Spring Wheat</a></li>
+                    <li><a href="#conditions-winter-wheat">Conditions - Winter Wheat</a></li>
+                    <li><a href="#production-estimate-wheat">Production Estimate by Wheat Class</a></li>
+                    <li><a href="#saskatchewan-crop-data">Saskatchewan Crop Data</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#production-cost">Production Cost</a>
+                <ul class="submenu">
+                    <li><a href="#us-historical-production-costs">US Historical Production Costs</a></li>
+                    <li><a href="#production-costs-by-commodity">Production Costs by Commodity</a></li>
+                    <li><a href="#profit-by-commodity">Profit by Commodity</a></li>
+                    <li><a href="#production-costs-vs-futures">Production Costs vs Futures</a></li>
+                    <li><a href="#production-costs-as-a-price-support">Production Costs as a Price Support</a></li>
+                    <li><a href="#acreage-vs-prices">Acreage vs Prices</a></li>
+                    <li><a href="#acreage-estimate">Acreage Estimate</a></li>
+                    <li><a href="#acreage-production-us-state-county">Acreage & Production by US State & County</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#import-export">Import & Export</a>
+                <ul class="submenu">
+                    <li><a href="#us-weekly-export-sales">US Weekly Export Sales</a></li>
+                    <li><a href="#accumulated-sales">Accumulated Sales</a></li>
+                    <li><a href="#us-export-inspection">US Export Inspection</a></li>
+                    <li><a href="#inspection-seasonal">Inspection Seasonal</a></li>
+                    <li><a href="#inspection-decomposition">Inspection Decomposition</a></li>
+                    <li><a href="#inspection-by-port">Inspection by Port</a></li>
+                    <li><a href="#inspection-data-details">Inspection Data Details</a></li>
+                    <li><a href="#export-sales-data-analysis">Export Sales Data Analysis</a></li>
+                    <li><a href="#portland-mex-export-data">Portland MEX Export Data</a></li>
+                    <li><a href="#canada-grain-export-stats">Canada Grain Export Stats</a></li>
+                    <li><a href="#eu-cereals-oilseed-products">EU Cereals, Oilseed & Oilseed Products</a></li>
+                    <li><a href="#eu-weekly-import-export">EU Weekly Import & Export</a></li>
+                    <li><a href="#japan-import-customs-data">Japan Import Customs Data</a></li>
+                    <li><a href="#world-grain-trade-flows">World Grain Trade Flows</a></li>
+                    <li><a href="#black-sea-export">Black Sea Export (D/C)</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#supply-demand">Supply & Demand</a>
+                <ul class="submenu">
+                    <li><a href="#psd-latest-data">PSD Latest Data</a></li>
+                    <li><a href="#historical-wasde-data">Historical WASDE Data</a></li>
+                    <li><a href="#us-corn-stocks-export">US Corn Stocks & Export</a></li>
+
+                    <li><a href="#us-ethanol-production">US Ethanol Production</a></li>
+                    <li><a href="#us-soybeans-crushed">US Soybeans Crushed</a></li>
+
+                    <li><a href="#canadian-grain-stocks">Canadian Grain Stocks</a></li>
+                    <li><a href="#eu-cereal-production">EU Cereal Production</a></li>
+                    <li><a href="#eu-oilseed-production">EU Oilseed Production</a></li>
+                    <li><a href="#australia-wheat-data">Australia Wheat Data</a></li>
+                    <li><a href="#brazil-corn-production-estimate">Brazil Corn Production Estimate</a></li>
+                    <li><a href="#brazil-soybean-production-estimate">Brazil Soybean Production Estimate</a></li>
+                    <li><a href="#russia-wheat-supply-demand">Russia Wheat Supply & Demand</a></li>
+                    <li><a href="#ukraine-corn-wheat-sd-analysis">Ukraine Corn & Wheat SD Analysis</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#freight">Freight</a>
+                <ul class="submenu">
+                    <li><a href="#ffas-daily-settlement">FFAs Daily Settlement</a></li>
+                    <li><a href="#ffas-volume-open-interest">FFAs Volume & Open Interest</a></li>
+                    <li><a href="#marine-fuel-oil-settlement">Marine Fuel Oil Settlement</a></li>
+                    <li><a href="#baltic-analysis">Baltic Analysis</a></li>
+                    <li><a href="#bunker-crude-oil-oil-products">Bunker, Crude Oil, and Oil Products</a></li>
+                    <li><a href="#ton-mile-analysis">Ton-Mile Analysis</a></li>
+                    <li><a href="#us-rail-metrics">US Rail Metrics</a></li>
+                    <li><a href="#us-barge-freight">US Barge Freight</a></li>
+                    <li><a href="#us-rail-freight">US Rail Freight</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#cot">Commitment of Traders</a>
+                <ul class="submenu">
+                    <li><a href="#cftc-disaggregated-report">CFTC Disaggregated Report</a></li>
+                    <li><a href="#cftc-legacy-report">CFTC Legacy Report</a></li>
+                    <li><a href="#managed-money">Managed Money Net Positions</a></li>
+                    <li><a href="#euronext-matif-cot-report">Euronext/MATIF CoT Report</a></li>
+                    <li><a href="#cot-commercial-index-ranking">CoT Commercial Index Ranking</a></li>
+                    <li><a href="#financial-disaggregated">Financial Disaggregated</a></li>
+                    <li><a href="#financial-data">Financial Data</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#exchange-rates">Exchange Rates</a>
+                <ul class="submenu">
+                    <li><a href="#exchange-rates-interest-rates">Exchange Rates & Interest Rates</a></li>
+                    <li><a href="#usd-jpy-forward-rate">USD/JPY Forward Rate Booking & IRD</a></li>
+                    <li><a href="#cad-jpy-forward-rate">CAD/JPY Forward Rate Booking & IRD</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#news">News</a>
+                <ul class="submenu">
+                    <li><a href="#grains">Grains</a></li>
+                    <li><a href="#ocean-freight">Ocean Freight</a></li>
+                    <li><a href="#financial-news">Financial</a></li>
+                    <li><a href="#japan-news">Japan News (in Japanese)</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#price-data">Price Data</a>
+                <ul class="submenu">
+                    <li><a href="#forward-curve">Forward Curve</a></li>
+                    <li><a href="#full-carry-calculation">Full Carry Calculation</a></li>
+                    <li><a href="#grain-seasonal">Grain Seasonal</a></li>
+                    <li><a href="#livestock-seasonal">Livestock Seasonal</a></li>
+                    <li><a href="#oilseed-products-seasonal">Oilseed & Products Seasonal</a></li>
+                    <li><a href="#dce-crush">DCE Crush Margin</a></li>
+                    <li><a href="#dce-vs-cme">DCE vs CME</a></li>
+                    <li><a href="#monthly-average-for-trade-planning">Monthly Average for Trade Planning</a></li>
+                    <li><a href="#weekly-export-fob-prices-grains">Weekly Export FOB Prices - Grains</a></li>
+                    <li><a href="#weekly-export-fob-prices-oilseeds">Weekly Export FOB Prices - Oilseeds</a></li>
+                    <li><a href="#livestock-margins">Livestock Margins</a></li>
+                    <li><a href="#2025-price-forecast">2025 Price Forecast</a></li>
+                    <li><a href="#corn-prices-ww-origin">Corn Prices WW Origin</a></li>
+                    <li><a href="#us-daily-grain-bids">US Daily Grain Bids</a></li>
+                    <li><a href="#brazil-us-corn-seasonal">Brazil vs US Corn Seasonal</a></li>
+                    <li><a href="#us-corn-futures-stocks-yield">US Corn Futures vs Stocks & Yield</a></li>
+                    <li><a href="#commodity-prices-indices">Commodity Prices & Indices</a></li>
+                    <li><a href="#stocks-commodities">Stocks & Commodities</a></li>
+                    <li><a href="#soybean-intraday-prices">Soybean Intraday Prices</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="https://profitpartner.unitedgrain.com/">More</a>
+                <ul class="submenu">
+                    <li><a href="#what-we-eat">What We Eat</a></li>
+                    <li><a href="#climate-and-democracy">Climate & Democracy</a></li>
+
+                    <li><a href="#library">Library</a></li>
+
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</header>
+
+    <main id="content"></main>
+
+    <footer>
+        <p>&copy; 2025 United Grain Corporation. All Rights Reserved.</p>
+        </footer>
+
+    <script>
+       const pages = {
+
+'home': `
+    <div style="text-align: center; padding: 40px 20px;">
+        <h1 style="font-size: 2.5em; color: var(--secondary-color); margin-bottom: 20px;">Empowering Data-Driven Decisions in Your Marketing Plan</h1>
+        <p style="font-size: 1.2em; color: var(--text-color-dark); max-width: 800px; margin: 0 auto 30px;">
+            Navigating the volatile world of commodity trading requires more than just instinct—it demands precision. UGC Profit Partner Program is your dedicated Business Intelligence partner, transforming complex, disparate market data into **actionable intelligence** so you can manage risk, optimize strategy, and capitalize on opportunities.
+        </p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 40px;">
+            <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); flex: 1; min-width: 250px; max-width: 350px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px;">Deep Market Insights</h3>
+                <p style="color: var(--text-color-dark);">Access comprehensive analytics on **global supply & demand**, freight costs, and live trade data to stay ahead of market shifts.</p>
+            </div>
+            <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); flex: 1; min-width: 250px; max-width: 350px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px;">Robust Risk Management</h3>
+                <p style="color: var(--text-color-dark);">From **Commitment of Traders (CoT)** data to historical price analysis, our tools help you identify potential risks and protect your margins.</p>
+            </div>
+            <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); flex: 1; min-width: 250px; max-width: 350px;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px;">Forward-Looking Analytics</h3>
+                <p style="color: var(--text-color-dark);">Utilize our **price forecasting** and forward curve models to build effective trading plans for today and tomorrow.</p>
+            </div>
+        </div>
+        <a href="#weather" style="display: inline-block; margin-top: 50px; padding: 12px 30px; background: var(--primary-color); color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background 0.3s;">Explore Our Data & Insights</a>
+    </div>
+`,
+
+    'weather': `
+        <iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=47ef746a92bfad2c18c3&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>
+    `,
+    'daily-weather': `
+        <iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=47ef746a92bfad2c18c3&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>
+    `,
+    'monthly-weather': `
+<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=d8a33747c021b739bcfe&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>
+`,
+    'soil-moisture': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=376d909011891e9597bd&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'extreme-weather': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=5f1ba8f52307de25cf1e&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-outlook-maps': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=981d709c59f8ea55cd86&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'climate-change': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=799dab460e380ff7c256&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'weather-data': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=91ff253ae0418809e876&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'oni': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=bc094d89fe92e4bbf599&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'enso-map': `<iframe title="World Weather" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7d9d477b-8e0a-430a-8188-03b3ad79e47b&pageName=0a558441106e6f96892b&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'progress-conditions': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-crop-progress': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'conditions-corn': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=ac60a5d4e686698d8d90&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'conditions-soybeans': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=27e3a34ab4230a990126&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'conditions-spring-wheat': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=45b4fc80500887b67395&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'conditions-winter-wheat': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=ReportSectionf3f82fc7d07c436c34a5&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'production-estimate-wheat': `<iframe title="Progress and Conditions" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b42b179e-6ab7-4084-b07d-c270818965ab&pageName=e993191ec441e8bbdc25&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'progress-conditions-rice': `<iframe title="Progress and Conditions" width="100%" height="100%" src="https://app.powerbi.com/reportEmbed?reportId=0cf81061-d29c-433b-8af7-b771f806ac0d&pageName=311e0bbb0baa1a0a6130&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'saskatchewan-crop-data': `<iframe title="Saskachewan Crop Data" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6e4a211a-27e0-4669-8dfb-73e302e9f672&pageName=255a73b282ba38215001&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'production-cost': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=28f7a120-d6a6-411e-a79b-38a2fa203e8e&pageName=ReportSectionb867f72dd90e293c1587&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-historical-production-costs': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=28f7a120-d6a6-411e-a79b-38a2fa203e8e&pageName=ReportSectionb867f72dd90e293c1587&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'production-costs-by-commodity': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=28f7a120-d6a6-411e-a79b-38a2fa203e8e&pageName=ReportSection481fc34e0554a15eba73&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'profit-by-commodity': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=28f7a120-d6a6-411e-a79b-38a2fa203e8e&pageName=ReportSection7a81612186dd01bc5d1b&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'production-costs-vs-futures': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=65b2fcc1-02b1-47f3-bdf4-782d31f84289&pageName=07a59c540466d0c3224b&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'production-costs-as-a-price-support': `<iframe title="Production Costs" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=28f7a120-d6a6-411e-a79b-38a2fa203e8e&pageName=ReportSectiona48661381e986671249d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'acreage-vs-prices': `<iframe title="Acreage Estimate" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=2a6d0151-62b3-4712-815f-66e39c0acf6b&pageName=598c9d8244d5eba4c899&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'acreage-estimate': `<iframe title="Acreage Estimate" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=2a6d0151-62b3-4712-815f-66e39c0acf6b&pageName=7498cf82a8300e7b2ac2&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'acreage-production-us-state-county': `<iframe title="Acreage and Production by State and County" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=c32d4c5e-25fb-4ed8-bb60-c8df16664617&pageName=234940c497111b18c4c1&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'import-export': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSection0311b3e21433531d6040&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-weekly-export-sales': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSection0311b3e21433531d6040&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'accumulated-sales': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSectionc50b584b2c03036a2549&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-export-inspection': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSection0947b7854ca6bc2cbc00&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'inspection-seasonal': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b3aee151-7785-427b-a05b-fba883eb7587&pageName=ReportSection6169132c7967da7a22ab&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'inspection-decomposition': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=f9f19bb221c9add0750e&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'inspection-by-port': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSectione0772a9063563b87a09a&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'inspection-data-details': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=ReportSection0309ef8b9a249c1406a8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'export-sales-data-analysis': `<iframe title="US Export Sales" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=04d21502-d251-4332-94a2-81e139d25292&pageName=b434a9f0602ed48e0c44&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'portland-mex-export-data': `<iframe title="MEX Export Data" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=0fcfecc3-efde-40ac-976c-26a928e1df5c&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'canada-grain-export-stats': `<iframe title="Canadian Grain Export Stats" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=9e5a9e2a-cd1a-46c3-84a2-705517281201&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'eu-cereals-oilseed-products': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=3dd156658f6c18a90555&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'eu-weekly-import-export': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=300c3371039edbcd05c3&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'japan-import-customs-data': `<iframe title="Japan Discharging Ports" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=d1f40575-9601-41af-95b4-4e72f2f8b5fd&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'world-grain-trade-flows': `<iframe title="World Grain Trade Flows" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=e510eefb-507e-473f-ad15-48ce220d0893&pageName=25fcbc668bed65060c31&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'black-sea-export': `<iframe title="Global Grain Export Import" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=a48319ff-21b0-490f-82f5-03c9cf1c9165&pageName=0aca6cfe40a519ac8c8d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'supply-demand': `<iframe title="PSD Latest Data Auto Update" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6ae00e34-dc33-436b-9005-26193e52b150&pageName=ReportSectiona8f7419e7753c5430620&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'psd-latest-data': `<iframe title="PSD Latest Data Auto Update" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6ae00e34-dc33-436b-9005-26193e52b150&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'historical-wasde-data': `<iframe title="Historical WASDE Data" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=9db66465-df21-4c22-8189-b9f00d10a62e&pageName=e4ff632d90158ac7d76d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-corn-stocks-export': `<iframe title="Corn Stocks vs Export" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=f36b09d1-c943-4df6-a96f-88eef50f4d5d&pageName=41148b73cdbf4be7af44&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'us-ethanol-production': `<iframe title="Corn for Fuel Ethanol" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=ec4b4d74-f8e2-41d4-a182-965f9b3e7e50&pageName=6633ce661c2686923f34&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-soybeans-crushed': `<iframe title="Corn for Fuel Ethanol" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=ec4b4d74-f8e2-41d4-a182-965f9b3e7e50&pageName=ac9b72a028bcf7bd3dc6&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'canadian-grain-stocks': `<iframe title="Canadian Grain Export Stats" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=9e5a9e2a-cd1a-46c3-84a2-705517281201&pageName=8a6a3011e20b396e7f6d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'eu-cereal-production': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=3511657ddc7670b90979&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'eu-oilseed-production': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=7aa893e0ebc94ae0e458&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'australia-wheat-data': `<iframe title="Australia Wheat Data" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=d8fd16ec-6a46-4272-b4d4-85cf77fd7153&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'brazil-corn-production-estimate': `<iframe title="Brazil Corn Prod Estimate" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=f5fa6725-277f-4ded-bf53-a58771bbc957&pageName=ReportSectione6c7ae6620c592e39296&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'brazil-soybean-production-estimate': `<iframe title="Brazil Soybeans Prod Estimate" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=f06c01bf-a523-4586-b7a1-10128507be5f^pageName=ReportSectione6c7ae6620c592e39296&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'russia-wheat-supply-demand': `<iframe title="Russian and Feed Wheat SD" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=46f40135-63f0-4d2d-8e5e-2edabb884ceb^pageName=ReportSectionab125a41bb6973906240&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'ukraine-corn-wheat-sd-analysis': `<iframe title="Ukranian Wheat and Corn SD" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=688d598d-e571-4043-8776-0a102cadbf01^pageName=ReportSectionab125a41bb6973906240&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'freight': `<iframe title="Ton-Mile Analysis" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=f15f12c3-d6af-4b88-b163-63b296ff8432&pageName=77fb5a27bbd38f77130d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'ffas-daily-settlement': `<iframe title="FFAs by SGX" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=5aa098c6-a17b-4adb-a421-984c869847da&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'ffas-volume-open-interest': `<iframe title="FFAs by SGX" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=5aa098c6-a17b-4adb-a421-984c869847da&pageName=ReportSectionb885209fe568ec83a544&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'marine-fuel-oil-settlement': `<iframe title="FFAs by SGX" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=5aa098c6-a17b-4adb-a421-984c869847da&pageName=5824ce33be65101e6e3d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'baltic-analysis': `<iframe title="Freight Index" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=70ba7011-0baa-4ccd-a78b-65df606c9da6^pageName=ReportSectionf3f322bbca32bebee3c7&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'bunker-crude-oil-oil-products': `<iframe title="Bunker and Oil" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b0e0049c-c40b-42a2-8b1d-8e23cb45290a&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'ton-mile-analysis': `<iframe title="Ton-Mile Analysis" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=f15f12c3-d6af-4b88-b163-63b296ff8432&pageName=793a72c9a3acc74bba33&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-rail-metrics': `<iframe title="US Rail Metrics" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=2707075c-149c-4521-852c-3ffab1ba0763&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-barge-freight': `<iframe title="Corn Prices WW Origins Auto Update" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=65c05d37-13e2-4479-92a7-0b6fda4330d6&pageName=ReportSection44901dc9e6c40d202d8e&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-rail-freight': `<iframe title="Corn Prices WW Origins Auto Update" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=65c05d37-13e2-4479-92a7-0b6fda4330d6&pageName=ReportSection32ff2f6e500800eb4a0b&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'canada-vessel-line-up': `<iframe title="Canada Line Up (test)" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=4f465647-efcc-463e-80dd-2397194fb987&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'cot': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'cftc-disaggregated-report': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'cftc-legacy-report': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=23ffd0c7116386105317&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'managed-money': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=ReportSection450d8d49cdb0298ae8e1&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'euronext-matif-cot-report': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=cc05eb7f5b9df95a7559&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'cot-commercial-index-ranking': `<iframe title="CoT" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=6f0d337d-c47b-4ec5-bd37-a99f95c6a1b3&pageName=9f8e3a4ad15a20a70855&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'financial-disaggregated': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=3c2f58f657e58f4931f4&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'financial-data': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=8fea0aabb4bf1ad3365d&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'exchange-rates': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=94a46894d2325cc3bdc8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'exchange-rates-interest-rates': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=94a46894d2325cc3bdc8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'usd-jpy-forward-rate': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=604ce46a1d26110f0fb8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'cad-jpy-forward-rate': `<iframe title="Exchange Rates" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=06ec1177-a23c-4684-95ae-5577b5b7feae&pageName=3cd0e1087f141c37bfa1&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'news': `<iframe title="Grain News Feed" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b8454698-14b0-43b5-b584-5d4d24f7adf7&pageName=ad20f3cd33590463e057&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'grains': `<iframe title="Grain News Feed" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b8454698-14b0-43b5-b584-5d4d24f7adf7&pageName=ad20f3cd33590463e057&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'ocean-freight': `<iframe title="Grain News Feed" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b8454698-14b0-43b5-b584-5d4d24f7adf7&pageName=d1380c973d844ed184c4&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'financial-news': `<iframe title="Grain News Feed" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b8454698-14b0-43b5-b584-5d4d24f7adf7&pageName=662389c47b543164ae0e&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'japan-news': `<iframe title="Grain News Feed" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=b8454698-14b0-43b5-b584-5d4d24f7adf7&pageName=d86323d69b873b249642&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'price-data': `<iframe title="Forward Curve" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=8e64aa41-88a3-47e1-88bc-051f3728d697&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'forward-curve': `<iframe title="Forward Curve" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=8e64aa41-88a3-47e1-88bc-051f3728d697&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'full-carry-calculation': `<iframe title="Forward Curve" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=8e64aa41-88a3-47e1-88bc-051f3728d697&pageName=3815e39c07096e4b2664&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'grain-seasonal': `<iframe title="Grain_Seasonal" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=0933554a-8ba9-43a4-8622-533fea99794e&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'livestock-seasonal': `<iframe title="Livestock Seasonal" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=05d177c3-0d99-4fcf-8dbd-7515048bd3a6&pageName=93ea01f41b01a3fc72d8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'oilseed-products-seasonal': `<iframe title="Oilseeds Seasonal" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=aaed74d8-a43b-4ecf-8f09-5e54910fdbc4&pageName=93ea01f41b01a3fc72d8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'dce-crush': `<iframe title="Oilseeds Seasonal" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=aaed74d8-a43b-4ecf-8f09-5e54910fdbc4&pageName=95c0743b100d0dded9c0&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'dce-vs-cme': `<iframe title="Oilseeds Seasonal" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=aaed74d8-a43b-4ecf-8f09-5e54910fdbc4&pageName=2435ef26c5b1c0ca18c8&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'monthly-average-for-trade-planning': `<iframe title="Hedge Trading Planning" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7a9b3d60-3c9f-428f-83cd-c1e2572b6f1a&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'weekly-export-fob-prices-grains': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=fea384f30c094eec0b20&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'weekly-export-fob-prices-oilseeds': `<iframe title="Weekly FOB Prices, EU Production and Trade" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=1c2d44cb-6f64-41df-9cec-9e56473678bb&pageName=955c2450bce9988e2131&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'livestock-margins': `<iframe title="Livestock Margins" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=ae890a21-a841-4fc0-83bd-0372630a87d6&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    '2025-price-forecast': `<iframe title="2025 Price Forecast" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=4342a471-1b56-4751-b8ef-bea48bc9caaf&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'corn-prices-ww-origin': `<iframe title="Corn Prices WW Origins Auto Update" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=65c05d37-13e2-4479-92a7-0b6fda4330d6&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-daily-grain-bids': `<iframe title="Historical Basis Data" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=a8671c3b-bbaa-469a-b90d-9703b3f8b363&pageName=ReportSection50854f7675083eb4ce6e&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'brazil-us-corn-seasonal': `<iframe title="CME Corn vs BMF Corn" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=3591e00e-6e46-4e75-9e4b-82df6b0859e6&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'us-corn-futures-stocks-yield': `<iframe title="Ending Stock and Yield vs Corn Price" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=747a5ce9-7d71-4c1e-8649-ab84145fc95a&pageName=ReportSection3528a0b5abd4e6801cd0&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'commodity-prices-indices': `<iframe title="Commodity Index" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=d36d8d32-6d5f-4e15-8357-2aa10dc5db58&pageName=ReportSection&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'stocks-commodities': `<iframe title="Commodity Index" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=d36d8d32-6d5f-4e15-8357-2aa10dc5db58&pageName=beb23b9ae014f5c7403a&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+    'soybean-intraday-prices': `<iframe title="Soybeans Intraday" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=2de00b62-30fb-43ea-929c-1265a4035bef&pageName=ReportSection368b3a4dbc42a0e0d08a&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'forward-curve-coffee': `<iframe title="Forward Curve Coffee" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=39db7bc6-dfed-4dba-82a8-501201e67e7d&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'more': `<iframe title="Position Table (Provisional) - All Grains and Products" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=5633bc22-c1a2-4c73-9e42-e243aaf3eb8d&pageName=80a9e62753aaf3704216&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'positions-pl': `<iframe title="Position Table (Provisional) - All Grains and Products" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=5633bc22-c1a2-4c73-9e42-e243aaf3eb8d&pageName=c6477b8c874133b46686&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'what-we-eat': `<iframe title="What We Eat" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=59e99b1d-0590-427e-824b-e046297b4611&pageName=705add06896c8c904e9a&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'climate-and-democracy': `<iframe title="Democracy and Climate" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=7a0be576-3bef-4e86-8a9a-b4a3c2021104&autoAuth=true&ctid=13ef8805-6aba-46f0-9890-6e45e709f941" frameborder="0" allowFullScreen="true"></iframe>`,
+
+    'library': `<iframe title="Library" width="1140" height="541.25" src="https://app.powerbi.com/reportEmbed?reportId=22d7de6d-ebaa-4ef8-a9bf-4ad89ab77877&pageName=a6c2bcfe060720c4e611&autoAuth=true&ctid=ffb76b20-b480-4230-8bf5-23ec920b1ce3" frameborder="0" allowFullScreen="true"></iframe>`,
+    'contact': `<a href="mailto:kkondo@bullbearjapan.com,kkondo@unitedgrain.com">Contact</a>`,
+};
+
+        const contentDiv = document.getElementById('content');
+
+        const router = () => {
+            const path = window.location.hash.slice(1) || 'home';
+            const pageContent = pages[path] || `<h2>Page Not Found</h2><p>The requested page does not exist.</p>`;
+            contentDiv.innerHTML = pageContent;
+        };
+
+        window.addEventListener('hashchange', router);
+        window.addEventListener('load', router);
+
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        hamburger.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+        });
+
+        navMenu.addEventListener('click', () => {
+            if (navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+
+</html>
