@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Time Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a light, professional theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Light gray background (Tailwind gray-50) */
+            color: #1f2937; /* Dark text (Tailwind gray-800) */
+            min-height: 100vh;
+        }
+        .time-card {
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.5s;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .time-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .time-display {
+            /* Aggressively reduced clamp range for maximum compactness */
+            font-size: clamp(1rem, 2vw, 1.5rem); 
+            font-weight: 700;
+            /* Default color for time (Day Mode) */
+            color: #1d4ed8; /* Strong blue accent (Tailwind blue-700) */
+            text-shadow: 0 0 5px rgba(29, 78, 216, 0.1);
+        }
+        .date-display {
+            /* Default color for date (Day Mode) */
+            color: #6b7280; /* Subtle date color (Tailwind gray-500) */
+            font-size: 0.75rem; /* text-xs equivalent */
+        }
+        /* Style for the flag and city name containers */
+        .city-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* --- New Custom Grid Class for Fluid Layout --- */
+        .fluid-grid {
+            /* Use CSS Grid with auto-fit for dynamic column creation */
+            display: grid;
+            gap: 0.75rem; /* Reduced gap from 1rem to 0.75rem */
+            
+            /* Columns only take the minimum content width, allowing the grid block to be centered */
+            grid-template-columns: repeat(auto-fit, minmax(190px, min-content));
+
+            /* Center the entire set of grid items within the container (this works now) */
+            justify-content: center; 
+        }
+
+        /* --- New Custom Class for Centering the Separators --- */
+        /* This wrapper ensures the separator line spans the full width and the content inside is centered */
+        .continent-group-wrapper {
+            width: 100%; /* Take full width of the main container */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex; /* Use flex to center the header line */
+            flex-direction: column;
+            align-items: center; /* Center the header element horizontally */
+        }
+        
+        /* Style for the actual separator line */
+        .continent-separator {
+            width: 80%; /* Ensure the line spans most of the width but not 100% to look clean */
+            border-top-width: 2px;
+            padding-top: 0.5rem;
+            text-align: center;
+            /* Center text within the limited width of the H2 */
+            margin: 0 auto; 
+        }
+
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-light': '#f8fafc',
+                        'accent-blue': '#1d4ed8',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<!-- Reduced overall page padding -->
+<body class="p-3 md:p-6">
+
+    <!-- Reduced header size and margin for compactness -->
+    <header class="text-center mb-5">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-0.5">
+            Global Time Zones
+        </h1>
+        <p class="text-base text-gray-500">Live Clocks around the World</p>
+    </header>
+
+    <main id="time-grid" class="max-w-7xl mx-auto">
+        <!-- Placeholder. The content will replace this element's inner HTML -->
+    </main>
+
+    <script>
+        // Data for the cities
+        const timeZones = [
+            { id: 'tokyo', city: 'Tokyo', zone: 'Asia/Tokyo', country: 'Japan', continent: 'Asia' },
+            { id: 'bangkok', city: 'Bangkok', zone: 'Asia/Bangkok', country: 'Thailand', continent: 'Asia' },
+            { id: 'dubai', city: 'Dubai', zone: 'Asia/Dubai', country: 'UAE', continent: 'Asia' },
+            { id: 'singapore', city: 'Singapore', zone: 'Asia/Singapore', country: 'Singapore', continent: 'Asia' },
+            { id: 'delhi', city: 'Delhi', zone: 'Asia/Kolkata', country: 'India', continent: 'Asia' },
+            { id: 'moscow', city: 'Moscow', zone: 'Europe/Moscow', country: 'Russia', continent: 'Europe' },
+            { id: 'cairo', city: 'Cairo', zone: 'Africa/Cairo', country: 'Egypt', continent: 'Africa' },
+            { id: 'casablanca', city: 'Casablanca', zone: 'Africa/Casablanca', country: 'Morocco', continent: 'Africa' },
+            { id: 'abidjan', city: 'Abidjan', zone: 'Africa/Abidjan', country: "Côte d'Ivoire", continent: 'Africa' }, 
+            { id: 'nairobi', city: 'Nairobi', zone: 'Africa/Nairobi', country: 'Kenya', continent: 'Africa' },
+            { id: 'johannesburg', city: 'Johannesburg', zone: 'Africa/Johannesburg', country: 'South Africa', continent: 'Africa' },
+            { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
+            { id: 'lisboa', city: 'Lisboa', zone: 'Europe/Lisbon', country: 'Portugal', continent: 'Europe' }, 
+            { id: 'zurich', city: 'Zurich', zone: 'Europe/Zurich', country: 'Switzerland', continent: 'Europe' }, 
+            { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
+            { id: 'sao-paulo', city: 'Sao Paulo', zone: 'America/Sao_Paulo', country: 'Brazil', continent: 'Americas' },
+            { id: 'chicago', city: 'Chicago', zone: 'America/Chicago', country: 'USA', continent: 'Americas' }, 
+            { id: 'new-york', city: 'New York', zone: 'America/New_York', country: 'USA', continent: 'Americas' },
+            { id: 'vancouver', city: 'Vancouver', zone: 'America/Vancouver', country: 'Canada', continent: 'Americas' },
+            { id: 'los-angeles', city: 'Los Angeles', zone: 'America/Los_Angeles', country: 'USA', continent: 'Americas' },
+            { id: 'honolulu', city: 'Honolulu', zone: 'Pacific/Honolulu', country: 'USA', continent: 'Oceania & Pacific' },
+            { id: 'guam', city: 'Guam', zone: 'Pacific/Guam', country: 'USA', continent: 'Oceania & Pacific' },
+            { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
+            { id: 'perth', city: 'Perth', zone: 'Australia/Perth', country: 'Australia', continent: 'Oceania & Pacific' },
+            { id: 'auckland', city: 'Auckland', zone: 'Pacific/Auckland', country: 'New Zealand', continent: 'Oceania & Pacific' },
+        ];
+
+        // --- Flag and Time Calculation Helper Functions ---
+
+        function getCountryCode(country) {
+            const codes = {
+                'UK': 'GB', 'France': 'FR', 'Portugal': 'PT', 'Switzerland': 'CH',
+                'Egypt': 'EG', 'Kenya': 'KE', 'South Africa': 'ZA', 'Russia': 'RU',
+                "Côte d'Ivoire": 'CI', 
+                'Japan': 'JP', 'Thailand': 'TH', 'UAE': 'AE', 'Singapore': 'SG', 'India': 'IN',
+                'Australia': 'AU', 'New Zealand': 'NZ', 
+                'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR',
+                'Morocco': 'MA'
+            };
+            return codes[country] || '';
+        }
+
+        function getFlagImageUrl(countryCode) {
+            if (!countryCode) return '';
+            return `https://flagcdn.com/48x36/${countryCode.toLowerCase()}.png`;
+        }
+
+        function getOffsetMinutes(zone) {
+            try {
+                const now = new Date();
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000); 
+                const localTimeInZone = new Date(now.toLocaleString('en-US', { timeZone: zone }));
+                const local = localTimeInZone.getTime();
+                return (local - utc) / 60000;
+            } catch (e) {
+                console.error(`Error calculating offset for ${zone}:`, e);
+                return 0; // Fallback
+            }
+        }
+
+        // New function to determine subtle gradient classes based on the hour
+        function getCardGradientClasses(hour) {
+            // Day (7:00 AM to 5:59 PM): Light Blueish
+            if (hour >= 7 && hour < 18) {
+                return 'bg-gradient-to-br from-white to-sky-100/70';
+            } 
+            // Dusk (6:00 PM to 7:59 PM): Soft Pink Orange transition
+            else if (hour >= 18 && hour < 20) {
+                return 'bg-gradient-to-br from-pink-100/70 to-orange-100/70';
+            } 
+            // Night (8:00 PM to 4:59 AM): Darker Navy/Indigo
+            else if (hour >= 20 || hour < 5) {
+                // Darker background, using deep blues/indigos
+                return 'bg-gradient-to-br from-indigo-900/80 to-blue-900/80';
+            } 
+            // Dawn (5:00 AM to 6:59 AM): Transition to light
+            else if (hour >= 5 && hour < 7) {
+                return 'bg-gradient-to-br from-yellow-50/70 to-orange-100/70';
+            }
+            return 'bg-white'; // Fallback
+        }
+
+        // Function to create the HTML element for a time card
+        function createTimeCard(zoneData) {
+            const countryCode = getCountryCode(zoneData.country);
+            const flagImageUrl = getFlagImageUrl(countryCode);
+
+            const card = document.createElement('div');
+            card.id = `card-${zoneData.id}`;
+            // Use time-card base class, gradient classes will be applied in updateTime
+            card.className = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
+            
+            // The main wrapper is now full width, uses flex for centering its content (items-center)
+            card.innerHTML = `
+                <!-- Card Content (z-index 10 to ensure it's above the potential background) -->
+                <div class="relative z-10 w-full flex flex-col items-center">
+                    <!-- City Header: Uses justify-center to center the flag and name -->
+                    <div class="city-header mb-0.5 justify-center">
+                        <!-- Flag Image: Removed border classes for a cleaner look -->
+                        <img src="${flagImageUrl}" alt="${zoneData.country} Flag" 
+                            class="w-7 h-auto rounded shadow-md" 
+                            onerror="this.style.display='none';"> 
+                            
+                        <!-- City name -->
+                        <h2 class="text-lg font-bold text-gray-800">${zoneData.city}</h2>
+                    </div>
+                </div>
+                
+                <!-- Time/Date Footer -->
+                <div class="relative z-10 w-full">
+                    <div class="flex items-center justify-center space-x-1 mb-0.5">
+                        <!-- DST indicator aligned horizontally with time -->
+                        <span id="dst-indicator-${zoneData.id}" class="text-xs text-blue-600 font-extrabold hidden px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300" title="Daylight Saving Time is Active">DST</span> 
+                        
+                        <!-- Time display, now smaller -->
+                        <div id="time-${zoneData.id}" class="time-display">--:--:--</div>
+                    </div>
+                    <!-- Date display, now smaller (text-xs) -->
+                    <div id="date-${zoneData.id}" class="date-display text-xs text-center">--/--/----</div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Function to update the time and apply background gradient for a specific zone
+        // FIX: Now accepts the cardElement directly to prevent null querySelector calls.
+        function updateTime(zoneData, cardElement) {
+            const now = new Date();
+
+            // 1. Get Time/Date Strings
+            const timeOptions = { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: zoneData.zone 
+            };
+            
+            const dateOptions = {
+                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: zoneData.zone
+            };
+
+            const timeString = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
+            const dateString = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
+
+            // 2. Determine hour and gradient
+            const hour = parseInt(new Intl.DateTimeFormat('en-US', { 
+                hour: 'numeric', hour12: false, timeZone: zoneData.zone 
+            }).format(now), 10);
+
+            const gradientClasses = getCardGradientClasses(hour);
+
+            // Determine if it's night (uses the same hours as the dark gradient)
+            const isNight = hour >= 20 || hour < 5;
+
+            // 3. Determine DST status
+            const longTimeZoneName = new Intl.DateTimeFormat('en-US', {
+                timeZone: zoneData.zone,
+                timeZoneName: 'long'
+            }).format(now);
+            
+            const isDST = longTimeZoneName.includes('Daylight') || longTimeZoneName.includes('Summer');
+
+            // 4. Update DOM elements using querySelector on the provided cardElement
+            
+            const timeElement = cardElement.querySelector(`#time-${zoneData.id}`);
+            const dateElement = cardElement.querySelector(`#date-${zoneData.id}`);
+            const dstElement = cardElement.querySelector(`#dst-indicator-${zoneData.id}`);
+            
+            // Get inner elements for dynamic color changes
+            // FIX: Use querySelector on the cardElement to find child elements
+            const cityNameElement = cardElement.querySelector('h2'); 
+            const flagImageElement = cardElement.querySelector('img'); 
+
+
+            // Conditional Styling based on Day/Night
+            if (isNight) {
+                // --- NIGHT MODE STYLES (White/Light Blue text on Dark Background) ---
+                
+                // City Name: White
+                cityNameElement.className = 'text-lg font-bold text-white'; 
+                
+                // Flag: No border, retains shadow
+                flagImageElement.className = 'w-7 h-auto rounded shadow-md'; 
+
+                // Time: Light Blue (Tailwind blue-200 equivalent)
+                timeElement.style.color = 'rgb(191, 219, 254)'; 
+                
+                // Date: Light Blue
+                dateElement.className = 'date-display text-xs text-blue-200 text-center'; 
+
+                // DST Badge: White/Transparent background
+                dstElement.className = 'text-xs text-white font-extrabold px-1 py-0.5 rounded-full bg-white/30 border border-white/50';
+            } else {
+                // --- DAY MODE STYLES (Revert to original dark colors) ---
+                
+                // City Name: Dark Gray
+                cityNameElement.className = 'text-lg font-bold text-gray-800';
+                
+                // Flag: No border, retains shadow
+                flagImageElement.className = 'w-7 h-auto rounded shadow-md';
+
+                // Time: Strong Blue (revert to CSS default)
+                timeElement.style.color = ''; 
+                
+                // Date: Subtle Gray
+                dateElement.className = 'date-display text-xs text-center'; 
+
+                // DST Badge: Blue
+                dstElement.className = 'text-xs text-blue-600 font-extrabold px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300';
+            }
+
+            // Update Time and Date text
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+            if (dateElement) {
+                dateElement.textContent = dateString;
+            }
+            
+            // Apply the gradient classes to the card
+            if (cardElement) {
+                 // Base classes that are permanent:
+                const baseClasses = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
+                
+                // Set the combined classes
+                cardElement.className = `${baseClasses} ${gradientClasses}`;
+            }
+
+            // Toggle visibility based on DST status
+            if (dstElement) {
+                dstElement.classList.toggle('hidden', !isDST);
+            }
+        }
+
+        // Main initialization function
+        function initializeClocks() {
+            // Get the main container where all content will be placed
+            const mainContainer = document.getElementById('time-grid');
+            if (!mainContainer) return; 
+
+            // Clear the main container content
+            mainContainer.innerHTML = '';
+
+            // 1. Calculate offset and sort the entire list by time zone (East to West)
+            const sortedTimeZones = timeZones.map(zone => {
+                return {
+                    ...zone,
+                    offsetMinutes: getOffsetMinutes(zone.zone)
+                };
+            }).sort((a, b) => b.offsetMinutes - a.offsetMinutes);
+
+            // 2. Group by continent
+            const continentGroups = sortedTimeZones.reduce((acc, zone) => {
+                const continent = zone.continent;
+                if (!acc[continent]) {
+                    acc[continent] = [];
+                }
+                acc[continent].push(zone);
+                return acc;
+            }, {});
+
+            // 3. Define the desired display order of continents
+            const continentOrder = ['Oceania & Pacific', 'Asia', 'Europe', 'Africa', 'Americas'];
+            
+            // Store all card elements to set up the interval timer later
+            const allCardElements = [];
+
+            // 4. Render the grouped and sorted cities
+            continentOrder.forEach(continent => {
+                if (continentGroups[continent] && continentGroups[continent].length > 0) {
+                    
+                    // 1. Full-width Centered Header Section
+                    const headerSection = document.createElement('div');
+                    headerSection.className = 'w-full flex justify-center my-4'; 
+                    
+                    const header = document.createElement('h2');
+                    header.className = `continent-separator text-lg font-extrabold text-gray-700 w-4/5 md:w-3/5 lg:w-2/5 border-t-2 pt-1.5 text-center ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'}`;
+                    header.textContent = continent.toUpperCase();
+                    
+                    headerSection.appendChild(header);
+                    mainContainer.appendChild(headerSection); // Append to the main container
+
+                    // 2. Centered Card Grid Section
+                    const cardGridSection = document.createElement('div');
+                    cardGridSection.className = 'fluid-grid max-w-7xl mx-auto mb-6'; 
+                    
+                    // Add the time cards
+                    continentGroups[continent].forEach(zone => {
+                        const card = createTimeCard(zone);
+                        cardGridSection.appendChild(card);
+                        
+                        // FIX: Pass the card element to updateTime on initial render
+                        updateTime(zone, card); 
+                        
+                        // Store the card and its data for the continuous update loop
+                        allCardElements.push({ card, zone }); 
+                    });
+                    
+                    mainContainer.appendChild(cardGridSection); // Append to the main container
+                }
+            });
+
+            // 5. Setup continuous time updates (every second)
+            setInterval(() => {
+                allCardElements.forEach(item => {
+                    updateTime(item.zone, item.card);
+                });
+            }, 1000);
+
+        }
+
+        // Run the initialization when the window loads
+        window.onload = initializeClocks;
+    </script>
+</body>
+</html>
