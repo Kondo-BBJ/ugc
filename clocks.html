@@ -10,7 +10,8 @@
         /* Custom styles for a light, professional theme */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* Light gray background (Tailwind gray-50) */
+            /* UPDATED: Changed to #f9f9f9 (a very light, off-white gray) */
+            background-color: #f9f9f9; 
             color: #1f2937; /* Dark text (Tailwind gray-800) */
             min-height: 100vh;
         }
@@ -68,8 +69,7 @@
         
         /* Style for the actual separator line */
         .continent-separator {
-            width: 80%; /* Ensure the line spans most of the width but not 100% to look clean */
-            border-top-width: 2px;
+            width: 100%; /* Set to 100% for full length */
             padding-top: 0.5rem;
             text-align: center;
             /* Center text within the limited width of the H2 */
@@ -180,8 +180,8 @@
             } 
             // Night (8:00 PM to 4:59 AM): Darker Navy/Indigo
             else if (hour >= 20 || hour < 5) {
-                // Darker background, using deep blues/indigos
-                return 'bg-gradient-to-br from-indigo-900/80 to-blue-900/80';
+                // Using a strong blue-900 (navy) to a dark slate-900 
+                return 'bg-gradient-to-br from-blue-900/80 to-slate-900/90';
             } 
             // Dawn (5:00 AM to 6:59 AM): Transition to light
             else if (hour >= 5 && hour < 7) {
@@ -381,7 +381,8 @@
                     headerSection.className = 'w-full flex justify-center my-4'; 
                     
                     const header = document.createElement('h2');
-                    header.className = `continent-separator text-lg font-extrabold text-gray-700 w-4/5 md:w-3/5 lg:w-2/5 border-t-2 pt-1.5 text-center ${continent === 'Americas' ? 'border-blue-400' : 'border-blue-200'}`;
+                    // Line separator remains thin (border-t) and light blue (border-blue-300)
+                    header.className = `continent-separator text-lg font-extrabold text-gray-700 w-full border-t pt-1.5 text-center border-blue-300`;
                     header.textContent = continent.toUpperCase();
                     
                     headerSection.appendChild(header);
