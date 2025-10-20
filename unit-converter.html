@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grain Unit Converter</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+            /* Changed to align items to the top (start) to utilize screen space better */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Start from the top */
+            align-items: center;
+            padding: 1rem;
+        }
+        .converter-card {
+            /* Increased max-width for the two-column desktop layout */
+            max-width: 1200px; 
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+        }
+        .custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='currentColor'%3e%3cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.2em;
+        }
+        /* Primary Blue Button Theme */
+        #calculate-btn {
+            background-color: #3b82f6;
+            color: white;
+            font-size: 1.125rem;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3), 0 2px 4px -2px rgba(59, 130, 246, 0.2);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #calculate-btn:hover {
+            background-color: #2563eb;
+        }
+        #calculate-btn:active {
+            transform: scale(0.99);
+        }
+
+        /* Result box styles - Removing internal borders */
+        .result-row {
+            padding: 0.75rem 0;
+            margin: 0 0.5rem;
+            border-bottom: 1px dashed #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        .result-row span:first-child {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .result-row span:last-child {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 1.1rem;
+        }
+        
+        /* Exchange Rate field styling for read-only */
+        #exchange-rate:read-only {
+            background-color: #f3f4f6;
+            cursor: default;
+        }
+
+        /* Styling for the two-column grid sections */
+        .input-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr; /* Single column by default (mobile) */
+        }
+        /* Enable two columns for medium screens and up */
+        @media (min-width: 768px) { 
+            .input-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER MOVED OUTSIDE THE CARD -->
+    <header class="text-center mb-6 mt-4">
+        <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">Grain Unit Converter</h1>
+        <p class="text-md text-gray-500 mt-1">Quantity Units and Value Calculator</p>
+    </header>
+
+    <div class="converter-card p-6 md:p-8">
+        
+        <form id="conversion-form" class="space-y-6">
+
+            <!-- MAIN INPUT AND CURRENCY INPUT IN A FLEXIBLE TWO-COLUMN GRID -->
+            <div class="input-grid">
+
+                <!-- COLUMN 1: Grain, Quantity, Price -->
+                <div class="space-y-4">
+                    <!-- Title for balancing columns -->
+                    <h3 class="text-lg font-semibold text-gray-700">Quantity and Price Inputs</h3>
+                    <!-- 1. Grain Type Select -->
+                    <div>
+                        <label for="grain-type" class="block text-sm font-medium text-gray-700 mb-1">Grain</label>
+                        <select id="grain-type" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                            <option value="corn">Corn (56 lbs/bu)</option>
+                            <option value="wheat">Wheat (60 lbs/bu)</option>
+                            <option value="soybeans">Soybeans (60 lbs/bu)</option>
+                            <!-- ACCURATE CONVERSION: Soybean Meal is 47.53 lbs/bu (based on 2000 lbs / 42.08 bu) -->
+                            <option value="soybean_meal">Soybean Meal (47.53 lbs/bu)</option>
+                            <option value="canola">Canola/Rapeseed (50 lbs/bu)</option>
+                            <option value="barley">Barley (48 lbs/bu)</option>
+                            <option value="sorghum">Sorghum/Milo (56 lbs/bu)</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Quantity Input and Unit Select (Input Unit) -->
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                        <div class="flex space-x-2">
+                            <!-- Default value is 60000 -->
+                            <input type="number" id="quantity" value="60000" min="0" step="any" required
+                                class="w-2/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Enter quantity">
+                            <select id="input-unit" class="custom-select w-1/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                                <option value="lbs">Pounds (lbs)</option>
+                                <option value="bu">Bushels</option>
+                                <!-- Default selected to Metric Tons -->
+                                <option value="metric_ton" selected>Metric Tons</option>
+                                <option value="short_ton">Short Tons</option>
+                                <option value="bag_60kg">Bags (60 kg)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 3. Price Input (Optional) - BASE currency price -->
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price (Base Currency)</label>
+                        <div class="flex items-center space-x-2">
+                            <!-- Default symbol reflects Base Currency setting (USD) -->
+                            <span id="base-currency-symbol" class="text-xl text-gray-500 font-semibold">$</span>
+                            <!-- Default price is 4.50 -->
+                            <input type="number" id="price" value="4.50" min="0" step="any"
+                                class="w-2/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Price per unit">
+                            <select id="price-unit" class="custom-select w-1/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                                <!-- Default selected to / Bushel -->
+                                <option value="bu" selected>/ Bushel</option>
+                                <option value="lbs">/ Pound (lbs)</option>
+                                <option value="metric_ton">/ Metric Ton</option>
+                                <option value="short_ton">/ Short Ton</option>
+                                <option value="bag_60kg">/ Bag (60 kg)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2: Currency Conversion Settings (No border-t needed here due to grid) -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700">Currency Conversion</h3>
+
+                    <div>
+                        <label for="base-currency" class="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
+                        <select id="base-currency" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                            <!-- Default selected to USD -->
+                            <option value="USD" selected>USD - United States Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="BRL">BRL - Brazilian Real</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="target-currency" class="block text-sm font-medium text-gray-700 mb-1">Target Currency</label>
+                        <select id="target-currency" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="BRL">BRL - Brazilian Real</option>
+                            <option value="USD">USD - United States Dollar</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="CAD">CAD - Canadian Dollar</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <!-- Default selected to JPY -->
+                            <option value="JPY" selected>JPY - Japanese Yen</option>
+                        </select>
+                    </div>
+
+                    <!-- Exchange Rate Input, now with live rate functionality -->
+                    <div class="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
+                        <span id="rate-label" class="text-sm font-medium text-gray-700 whitespace-nowrap">1 USD =</span>
+                        <input type="number" id="exchange-rate" value="0.92" min="0.001" step="any"
+                            class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Enter exchange rate">
+                        <span id="rate-target-symbol" class="text-xl text-gray-500 font-semibold whitespace-nowrap">¥</span>
+                        <!-- Spinner and Status Indicator -->
+                        <div id="rate-status" class="w-6 h-6 flex items-center justify-center">
+                            <svg id="rate-spinner" class="animate-spin h-5 w-5 text-blue-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p id="rate-status-message" class="text-xs text-gray-500 text-center italic"></p>
+                </div>
+            </div>
+
+            <!-- Calculation Button (Narrower and Centered) -->
+            <div class="pt-4 flex justify-center">
+                <button type="submit" id="calculate-btn" class="w-full md:w-1/3 py-3 rounded-xl font-bold text-lg shadow-md hover:shadow-lg">
+                    Calculate Conversion
+                </button>
+            </div>
+        </form>
+
+        <!-- 5. Results Display Section (Full width below the button) -->
+        <!-- Results are now in a two-column grid on desktop -->
+        <div id="results" class="mt-8 border-t border-gray-200 pt-6 p-2 rounded-lg bg-gray-50 hidden">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Conversion Results</h3>
+
+            <div class="input-grid space-y-0">
+                
+                <!-- COLUMN 1 (Results): Mass & Volume Conversions -->
+                <div>
+                    <h4 class="text-sm font-semibold text-blue-700 pt-3">Mass & Volume Conversions</h4>
+                    <!-- Volume/Mass Conversions -->
+                    <div class="result-row">
+                        <span>Total Volume (Bushels):</span>
+                        <span id="result-bu">0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Total Mass (Pounds (lbs)):</span>
+                        <span id="result-lbs">0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Total Mass (Bags 60 kg):</span>
+                        <span id="result-bag-60kg">0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Total Mass (Metric Tons):</span>
+                        <span id="result-metric-ton">0.00</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Total Mass (Short Tons):</span>
+                        <span id="result-short-ton">0.00</span>
+                    </div>
+                </div>
+
+                <!-- COLUMN 2 (Results): Price & Value Estimates & Futures -->
+                <div>
+                    <h4 class="text-sm font-semibold text-green-700 pt-3 border-t md:border-t-0 border-gray-200">Price & Value Estimates</h4>
+
+                    <!-- Price Per Unit Results -->
+                    <div id="price-per-price-unit-target-row" class="hidden result-row">
+                        <span id="price-per-price-unit-target-label"></span>
+                        <span id="price-per-price-unit-target"></span>
+                    </div>
+
+                    <div id="price-per-input-unit-base-row" class="hidden result-row">
+                        <span id="price-per-input-unit-base-label"></span>
+                        <span id="price-per-input-unit-base"></span>
+                    </div>
+
+                    <div id="price-per-input-unit-target-row" class="hidden result-row">
+                        <span id="price-per-input-unit-target-label"></span>
+                        <span id="price-per-input-unit-target-value"></span>
+                    </div>
+
+                    <!-- Total Value Calculation -->
+                    <div id="value-result-row" class="hidden result-row bg-yellow-100 rounded-md my-2 py-3 border-none">
+                        <span class="font-bold text-gray-800">TOTAL ESTIMATED VALUE (<span id="target-currency-code-display">JPY</span>):</span>
+                        <span id="result-value" class="font-extrabold text-lg text-blue-700"></span>
+                    </div>
+                    
+                    <h4 class="text-sm font-semibold text-red-700 pt-3 border-t border-gray-200">Futures Contracts</h4>
+                    <!-- Futures Contract Result (RESTORED) -->
+                    <div id="futures-result-row" class="result-row hidden">
+                        <span id="futures-label"></span>
+                        <span id="result-futures">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Message Box (replaces alert()) -->
+        <div id="message-box" class="fixed top-0 left-1/2 -translate-x-1/2 mt-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg shadow-lg z-50 hidden" role="alert">
+            <!-- Message text will be inserted here -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- Grain Constants (Weight in lbs per Bushel) ---
+        // AMENDED: Soybean Meal is now set precisely to 47.53 lbs/bu (2000 lbs / 42.08 bu).
+        const CONVERSION_RATES = {
+            corn: 56,       // lbs per bushel
+            wheat: 60,      // lbs per bushel
+            soybeans: 60,    // lbs per bushel
+            soybean_meal: 2000/42.08, // lbs per bushel (Updated for high accuracy)
+            canola: 50,
+            barley: 48,
+            sorghum: 56
+        };
+
+        // --- Futures Contract Constants (Units per 1 Contract) ---
+        const FUTURES_CONTRACTS = {
+            corn: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Corn (5,000 bu) Contracts:' },
+            wheat: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Wheat (5,000 bu) Contracts:' },
+            soybeans: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Soybean (5,000 bu) Contracts:' },
+            // Note: Soybean meal futures are based on Short Tons, not bushels, but this calculation
+            // uses the unit defined by the contract size. We use short_ton here.
+            soybean_meal: { unit: 'short_ton', size: 100, exchange: 'CME', label: 'Soy Meal (100 sh.t) Contracts:' },
+            canola: { unit: 'metric_ton', size: 20, exchange: 'ICE', label: 'Canola (20 MT) Contracts:' },
+            barley: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Barley (5,000 bu) Contracts:' },
+            sorghum: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Sorghum (5,000 bu) Contracts:' },
+        };
+
+        // --- Mass Constants ---
+        const KG_PER_BAG = 60;
+        const LBS_PER_KG = 2.20462;
+        const LBS_PER_METRIC_TON = 2204.62;
+        const LBS_PER_SHORT_TON = 2000;
+        const LBS_PER_60KG_BAG = KG_PER_BAG * LBS_PER_KG; // Approx 132.277 lbs
+
+        // Map from select value to display text (for labels)
+        const UNIT_DISPLAY = {
+            'lbs': 'Pounds (lbs)',
+            'bu': 'Bushels',
+            'metric_ton': 'Metric Ton',
+            'short_ton': 'Short Ton',
+            'bag_60kg': 'Bag (60 kg)'
+        };
+
+        // --- Currency Map for Symbols and Formatting ---
+        const CURRENCY_MAP = {
+            'USD': { symbol: '$', locale: 'en-US' },
+            'EUR': { symbol: '€', locale: 'de-DE' },
+            'BRL': { symbol: 'R$', locale: 'pt-BR' },
+            'GBP': { symbol: '£', locale: 'en-GB' },
+            'CAD': { symbol: '$', locale: 'en-CA' },
+            'AUD': { symbol: '$', locale: 'en-AU' },
+            'JPY': { symbol: '¥', locale: 'ja-JP' },
+        };
+
+
+        // --- DOM Elements ---
+        const form = document.getElementById('conversion-form');
+        const quantityInput = document.getElementById('quantity');
+        const priceInput = document.getElementById('price');
+
+        const grainTypeSelect = document.getElementById('grain-type');
+        const inputUnitSelect = document.getElementById('input-unit');
+        const priceUnitSelect = document.getElementById('price-unit');
+
+        // Currency Elements
+        const baseCurrencySelect = document.getElementById('base-currency');
+        const targetCurrencySelect = document.getElementById('target-currency');
+        const exchangeRateInput = document.getElementById('exchange-rate');
+        const baseCurrencySymbolSpan = document.getElementById('base-currency-symbol');
+        const rateLabelSpan = document.getElementById('rate-label');
+        const rateTargetSymbolSpan = document.getElementById('rate-target-symbol');
+        const targetCurrencyCodeDisplay = document.getElementById('target-currency-code-display');
+        const rateSpinner = document.getElementById('rate-spinner');
+        const rateStatusMessage = document.getElementById('rate-status-message');
+
+        const resultsDiv = document.getElementById('results');
+        const resultLbs = document.getElementById('result-lbs');
+        const resultBu = document.getElementById('result-bu');
+        const resultMetricTon = document.getElementById('result-metric-ton');
+        const resultShortTon = document.getElementById('result-short-ton');
+        const resultBag60Kg = document.getElementById('result-bag-60kg');
+        const valueResultRow = document.getElementById('value-result-row');
+        const resultValue = document.getElementById('result-value');
+        const messageBox = document.getElementById('message-box');
+
+        // Futures Elements
+        const futuresResultRow = document.getElementById('futures-result-row');
+        const resultFutures = document.getElementById('result-futures');
+        const futuresLabel = document.getElementById('futures-label');
+
+        // Price Per Unit Elements
+        const pricePerPriceUnitTargetRow = document.getElementById('price-per-price-unit-target-row');
+        const pricePerPriceUnitTargetLabel = document.getElementById('price-per-price-unit-target-label');
+        const pricePerPriceUnitTarget = document.getElementById('price-per-price-unit-target');
+
+        const pricePerInputUnitBaseRow = document.getElementById('price-per-input-unit-base-row');
+        const pricePerInputUnitBaseLabel = document.getElementById('price-per-input-unit-base-label');
+        const pricePerInputUnitBase = document.getElementById('price-per-input-unit-base');
+
+        const pricePerInputUnitTargetRow = document.getElementById('price-per-input-unit-target-row');
+        const pricePerInputUnitTargetLabel = document.getElementById('price-per-input-unit-target-label');
+        const pricePerInputUnitTargetValueElement = document.getElementById('price-per-input-unit-target-value');
+
+        // --- API Constants ---
+        const API_BASE_URL = 'https://open.er-api.com/v6/latest/USD'; // Reliable USD-based API
+        const FALLBACK_RATE = 0.92; // Default rate if API fails
+        let usdRates = {}; // Store all fetched rates (USD is base)
+        let isBaseRateLoaded = false;
+
+        /**
+         * Displays a temporary message box.
+         */
+        function showMessage(message) {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        /**
+         * Fetches all currency rates relative to USD and caches them.
+         */
+        async function fetchBaseRates() {
+            if (isBaseRateLoaded) return true; // Only fetch once
+
+            rateSpinner.classList.remove('hidden');
+            rateStatusMessage.textContent = 'Loading currency rates...';
+            exchangeRateInput.setAttribute('readonly', 'true');
+
+            try {
+                // Implementing simple retry logic in case of transient network issues
+                let response;
+                let success = false;
+                for (let i = 0; i < 3; i++) {
+                    response = await fetch(API_BASE_URL);
+                    if (response.ok) {
+                        success = true;
+                        break;
+                    }
+                    // Exponential backoff
+                    await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i))); 
+                }
+
+                if (!success || !response) {
+                    throw new Error(`Failed to fetch after multiple retries.`);
+                }
+
+                const data = await response.json();
+
+                if (data.result === 'success' && data.rates) {
+                    usdRates = data.rates;
+                    isBaseRateLoaded = true;
+                    rateStatusMessage.textContent = 'Live currency rates loaded.';
+                    return true;
+                } else {
+                    throw new Error('Invalid response structure from API.');
+                }
+            } catch (error) {
+                console.error("Error fetching base rates:", error);
+                rateStatusMessage.textContent = 'Error: Failed to load live rates. Using manual rate.';
+                return false;
+            } finally {
+                rateSpinner.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Calculates and displays the exchange rate using the stored USD-based rates.
+         */
+        function calculateExchangeRate(baseCode, targetCode) {
+            rateSpinner.classList.add('hidden');
+
+            if (baseCode === targetCode) {
+                exchangeRateInput.value = 1.00;
+                exchangeRateInput.setAttribute('readonly', 'true');
+                rateStatusMessage.textContent = 'Currencies match (Rate: 1.00)';
+                return 1.00;
+            }
+
+            // Check if rates were loaded successfully
+            if (!isBaseRateLoaded || Object.keys(usdRates).length === 0) {
+                exchangeRateInput.value = FALLBACK_RATE;
+                exchangeRateInput.removeAttribute('readonly');
+                rateStatusMessage.textContent = `Live rates unavailable. Using manual rate (${FALLBACK_RATE}).`;
+                return FALLBACK_RATE;
+            }
+
+
+            const rateFromUSD = usdRates[baseCode];
+            const rateToUSD = usdRates[targetCode];
+
+            if (rateFromUSD && rateToUSD) {
+                // Rate A to B = (USD to B) / (USD to A)
+                const calculatedRate = rateToUSD / rateFromUSD;
+
+                exchangeRateInput.value = calculatedRate.toFixed(4);
+                exchangeRateInput.setAttribute('readonly', 'true');
+                rateStatusMessage.textContent = 'Live rate updated.';
+                return calculatedRate;
+
+            } else {
+                exchangeRateInput.value = FALLBACK_RATE;
+                exchangeRateInput.removeAttribute('readonly');
+                rateStatusMessage.textContent = `Rate for ${baseCode} or ${targetCode} missing. Using manual rate (${FALLBACK_RATE}).`;
+                showMessage('Missing currency rate. Using manual fallback.');
+                return FALLBACK_RATE;
+            }
+        }
+
+        /**
+         * Converts the input quantity to a base unit (lbs).
+         */
+        function toPounds(quantity, unit, grain) {
+            const lbsPerBushel = CONVERSION_RATES[grain];
+
+            switch (unit) {
+                case 'lbs':
+                    return quantity;
+                case 'bu':
+                    return quantity * lbsPerBushel;
+                case 'metric_ton':
+                    return quantity * LBS_PER_METRIC_TON;
+                case 'short_ton':
+                    return quantity * LBS_PER_SHORT_TON;
+                case 'bag_60kg':
+                    return quantity * LBS_PER_60KG_BAG;
+                default:
+                    return 0;
+            }
+        }
+
+        /**
+         * Calculates the total number of futures contracts based on the grain type and total mass/volume.
+         */
+        function calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain) {
+            const contract = FUTURES_CONTRACTS[grain];
+            if (!contract) return 0;
+
+            if (contract.unit === 'bu') {
+                return totalBushels / contract.size;
+            }
+            if (contract.unit === 'metric_ton') {
+                return totalMetricTons / contract.size;
+            }
+            if (contract.unit === 'short_ton') {
+                return totalShortTons / contract.size;
+            }
+            return 0;
+        }
+
+        /**
+         * Calculates the total value based on the total mass and price per unit in the BASE currency.
+         */
+        function calculateBaseValue(totalLbs, price, priceUnit, grain) {
+            if (price <= 0) return 0;
+            const lbsPerBushel = CONVERSION_RATES[grain];
+            let rateLbs; // The price of 1 pound of grain
+
+            switch (priceUnit) {
+                case 'bu':
+                    rateLbs = price / lbsPerBushel;
+                    break;
+                case 'lbs':
+                    rateLbs = price;
+                    break;
+                case 'metric_ton':
+                    rateLbs = price / LBS_PER_METRIC_TON;
+                    break;
+                case 'short_ton':
+                    rateLbs = price / LBS_PER_SHORT_TON;
+                    break;
+                case 'bag_60kg':
+                    rateLbs = price / LBS_PER_60KG_BAG;
+                    break;
+                default:
+                    return 0;
+            }
+            return totalLbs * rateLbs;
+        }
+
+        /**
+         * Updates the currency symbols and rate label based on selection, then calculates rate.
+         */
+        async function updateCurrencyDisplay() {
+            const baseCode = baseCurrencySelect.value;
+            const targetCode = targetCurrencySelect.value;
+
+            // 1. Update Base Currency Symbol next to Price Input
+            baseCurrencySymbolSpan.textContent = CURRENCY_MAP[baseCode]?.symbol || baseCode;
+
+            // 2. Update Exchange Rate Label
+            rateLabelSpan.textContent = `1 ${baseCode} =`;
+            rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
+
+            // 3. Update Result Title
+            targetCurrencyCodeDisplay.textContent = targetCode;
+
+            // 4. Calculate the exchange rate
+            calculateExchangeRate(baseCode, targetCode);
+
+            // 5. Trigger recalculation if inputs are valid
+            if (parseFloat(quantityInput.value) > 0) {
+                 handleConversion({ preventDefault: () => {} });
+            }
+        }
+
+        /**
+         * Helper function to format currency.
+         */
+        function formatCurrency(value, currencyCode) {
+            const info = CURRENCY_MAP[currencyCode] || { locale: undefined };
+            return new Intl.NumberFormat(info.locale, {
+                style: 'currency',
+                currency: currencyCode,
+                // Ensure 2 decimals for financial readability
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+        }
+
+        /**
+         * Main calculation and display function.
+         */
+        function handleConversion(event) {
+            if (event) event.preventDefault(); // Stop form submission
+
+            const quantity = parseFloat(quantityInput.value);
+            const price = parseFloat(priceInput.value);
+            const exchangeRate = parseFloat(exchangeRateInput.value);
+
+            const grain = grainTypeSelect.value;
+            const inputUnit = inputUnitSelect.value;
+            const priceUnit = priceUnitSelect.value;
+            const baseCurrencyCode = baseCurrencySelect.value;
+            const targetCurrencyCode = targetCurrencySelect.value;
+
+            const rate = isNaN(exchangeRate) || exchangeRate <= 0 ? 1 : exchangeRate;
+
+            if (isNaN(quantity) || quantity <= 0) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            // 1. Convert everything to the base unit (LBS)
+            const totalLbs = toPounds(quantity, inputUnit, grain);
+            const lbsPerBushel = CONVERSION_RATES[grain];
+
+            // 2. Perform all required conversions (Mass/Volume)
+            const totalBushels = totalLbs / lbsPerBushel;
+            const totalMetricTons = totalLbs / LBS_PER_METRIC_TON;
+            const totalShortTons = totalLbs / LBS_PER_SHORT_TON;
+            const totalBag60Kg = totalLbs / LBS_PER_60KG_BAG;
+
+            // Use Intl.NumberFormat for better localization of large numbers
+            const numberFormatter = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+            resultBu.textContent = numberFormatter.format(totalBushels);
+            resultLbs.textContent = numberFormatter.format(totalLbs);
+            resultShortTon.textContent = numberFormatter.format(totalShortTons);
+            resultMetricTon.textContent = numberFormatter.format(totalMetricTons);
+            resultBag60Kg.textContent = numberFormatter.format(totalBag60Kg);
+
+            // Futures Contracts Result
+            const totalFutures = calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain);
+            const futuresContractInfo = FUTURES_CONTRACTS[grain];
+
+            if (futuresContractInfo) {
+                futuresLabel.textContent = futuresContractInfo.label;
+                resultFutures.textContent = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(totalFutures);
+                futuresResultRow.classList.remove('hidden');
+            } else {
+                futuresResultRow.classList.add('hidden');
+            }
+
+            // --- Price & Value Calculations ---
+            const hasPrice = !isNaN(price) && price > 0;
+
+            if (hasPrice) {
+                // Calculate Total Value in BASE currency
+                const totalBaseValue = calculateBaseValue(totalLbs, price, priceUnit, grain);
+
+                // 1. Price per Selected Price Unit (Target Currency)
+                const pricePerPriceUnitTargetValue = price * rate;
+                pricePerPriceUnitTargetLabel.textContent = `Price per 1 ${UNIT_DISPLAY[priceUnit]} (${targetCurrencyCode}):`;
+                pricePerPriceUnitTarget.textContent = formatCurrency(pricePerPriceUnitTargetValue, targetCurrencyCode);
+                pricePerPriceUnitTargetRow.classList.remove('hidden');
+
+                // 2. Price per Input Unit (Base Currency)
+                const pricePerInputUnitBaseValue = totalBaseValue / quantity;
+                pricePerInputUnitBaseLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${baseCurrencyCode}):`;
+                pricePerInputUnitBase.textContent = formatCurrency(pricePerInputUnitBaseValue, baseCurrencyCode);
+                pricePerInputUnitBaseRow.classList.remove('hidden');
+
+                // 3. Price per Input Unit (Target Currency)
+                const pricePerInputUnitTargetValue = pricePerInputUnitBaseValue * rate;
+                pricePerInputUnitTargetLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${targetCurrencyCode}):`;
+                pricePerInputUnitTargetValueElement.textContent = formatCurrency(pricePerInputUnitTargetValue, targetCurrencyCode);
+                pricePerInputUnitTargetRow.classList.remove('hidden');
+
+
+                // 4. Total Estimated Value (Target Currency)
+                const finalValue = totalBaseValue * rate;
+                resultValue.textContent = formatCurrency(finalValue, targetCurrencyCode);
+                valueResultRow.classList.remove('hidden');
+            } else {
+                // Hide all price/value rows if no price is entered
+                valueResultRow.classList.add('hidden');
+                pricePerPriceUnitTargetRow.classList.add('hidden');
+                pricePerInputUnitBaseRow.classList.add('hidden');
+                pricePerInputUnitTargetRow.classList.add('hidden');
+            }
+
+            // Show results area
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        form.addEventListener('submit', handleConversion);
+
+        // Listen for changes on currency selects to trigger rate fetch and update
+        baseCurrencySelect.addEventListener('change', updateCurrencyDisplay);
+        targetCurrencySelect.addEventListener('change', updateCurrencyDisplay);
+
+        // Listen for changes on other inputs to trigger conversion using current rate
+        exchangeRateInput.addEventListener('input', handleConversion);
+        priceInput.addEventListener('input', handleConversion);
+        quantityInput.addEventListener('input', handleConversion);
+        grainTypeSelect.addEventListener('change', handleConversion);
+        inputUnitSelect.addEventListener('change', handleConversion);
+        priceUnitSelect.addEventListener('change', handleConversion);
+
+
+        // Initial setup and calculation on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load base rates first
+            await fetchBaseRates();
+            // Then update the display and perform the first calculation
+            updateCurrencyDisplay();
+        });
+
+    </script>
+</body>
+</html>
