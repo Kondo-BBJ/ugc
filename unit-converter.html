@@ -11,21 +11,20 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7f9fc;
-            /* Changed to align items to the top (start) to utilize screen space better */
+            /* Align items to the top (start) */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: flex-start; /* Start from the top */
             align-items: center;
-            padding: 1rem;
+            padding: 0.5rem; 
         }
         .converter-card {
-            /* Increased max-width for the two-column desktop layout */
             max-width: 1200px; 
             width: 100%;
             background-color: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08), 0 5px 15px -5px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.05), 0 3px 10px -3px rgba(0, 0, 0, 0.03);
         }
         .custom-select {
             appearance: none;
@@ -38,8 +37,8 @@
         #calculate-btn {
             background-color: #3b82f6;
             color: white;
-            font-size: 1.125rem;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3), 0 2px 4px -2px rgba(59, 130, 246, 0.2);
+            font-size: 1.125rem; 
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
             transition: background-color 0.2s, transform 0.1s;
         }
         #calculate-btn:hover {
@@ -49,70 +48,69 @@
             transform: scale(0.99);
         }
 
-        /* Result box styles - Removing internal borders */
+        /* Result box styles - Restored standard font size and padding */
         .result-row {
-            padding: 0.75rem 0;
+            padding: 0.75rem 0; 
             margin: 0 0.5rem;
             border-bottom: 1px dashed #e5e7eb;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 1rem; 
         }
         .result-row:last-child {
             border-bottom: none;
         }
-        .result-row span:first-child {
-            font-weight: 500;
-            color: #4b5563;
-        }
         .result-row span:last-child {
             font-weight: 700;
             color: #1f2937;
-            font-size: 1.1rem;
+            font-size: 1.125rem; 
         }
         
-        /* Exchange Rate field styling for read-only */
-        #exchange-rate:read-only {
-            background-color: #f3f4f6;
-            cursor: default;
-        }
-
-        /* Styling for the two-column grid sections */
+        /* Input Grid and Spacing */
         .input-grid {
             display: grid;
-            gap: 2rem;
-            grid-template-columns: 1fr; /* Single column by default (mobile) */
+            gap: 1.5rem; 
+            grid-template-columns: 1fr;
         }
-        /* Enable two columns for medium screens and up */
         @media (min-width: 768px) { 
             .input-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+        /* Standard input padding */
+        .input-field {
+            padding: 0.5rem; 
+        }
+        /* Reverted label font size to text-sm equivalent */
+        .input-label {
+            font-size: 0.875rem; 
+        }
     </style>
 </head>
 <body>
-    <!-- HEADER MOVED OUTSIDE THE CARD -->
-    <header class="text-center mb-6 mt-4">
+    <!-- HEADER -->
+    <header class="text-center mb-4 mt-2">
+        <!-- Title font size is text-3xl -->
         <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">Grain Unit Converter</h1>
-        <p class="text-md text-gray-500 mt-1">Quantity Units and Value Calculator</p>
+        <p class="text-sm text-gray-500 mt-0.5">Quantity, Price, and Value Calculator</p>
     </header>
 
-    <div class="converter-card p-6 md:p-8">
+    <div class="converter-card p-4 md:p-6">
         
-        <form id="conversion-form" class="space-y-6">
+        <form id="conversion-form" class="space-y-3">
 
             <!-- MAIN INPUT AND CURRENCY INPUT IN A FLEXIBLE TWO-COLUMN GRID -->
             <div class="input-grid">
 
-                <!-- COLUMN 1: Grain, Quantity, Price -->
-                <div class="space-y-4">
-                    <!-- Title for balancing columns -->
-                    <h3 class="text-lg font-semibold text-gray-700">Quantity and Price Inputs</h3>
+                <!-- COLUMN 1: Grain, Quantity, Price, and Price Unit -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-700">Quantity and Price Inputs</h3>
+                    
                     <!-- 1. Grain Type Select -->
                     <div>
-                        <label for="grain-type" class="block text-sm font-medium text-gray-700 mb-1">Grain</label>
-                        <select id="grain-type" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                        <label for="grain-type" class="block input-label font-medium text-gray-700 mb-1">Grain</label>
+                        <select id="grain-type" class="custom-select w-full input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
                             <option value="corn">Corn (56 lbs/bu)</option>
                             <option value="wheat">Wheat (60 lbs/bu)</option>
                             <option value="soybeans">Soybeans (60 lbs/bu)</option>
@@ -126,15 +124,13 @@
 
                     <!-- 2. Quantity Input and Unit Select (Input Unit) -->
                     <div>
-                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                        <label for="quantity" class="block input-label font-medium text-gray-700 mb-1">Quantity</label>
                         <div class="flex space-x-2">
-                            <!-- Default value is 60000 -->
                             <input type="number" id="quantity" value="60000" min="0" step="any" required
-                                class="w-2/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Enter quantity">
-                            <select id="input-unit" class="custom-select w-1/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                                class="w-2/3 input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Enter quantity">
+                            <select id="input-unit" class="custom-select w-1/3 input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
                                 <option value="lbs">Pounds (lbs)</option>
                                 <option value="bu">Bushels</option>
-                                <!-- Default selected to Metric Tons -->
                                 <option value="metric_ton" selected>Metric Tons</option>
                                 <option value="short_ton">Short Tons</option>
                                 <option value="bag_60kg">Bags (60 kg)</option>
@@ -142,17 +138,18 @@
                         </div>
                     </div>
 
-                    <!-- 3. Price Input (Optional) - BASE currency price -->
+                    <!-- 3. Price Input (Optional) + 4. Price Unit Select -->
                     <div>
-                        <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price (Base Currency)</label>
-                        <div class="flex items-center space-x-2">
-                            <!-- Default symbol reflects Base Currency setting (USD) -->
-                            <span id="base-currency-symbol" class="text-xl text-gray-500 font-semibold">$</span>
-                            <!-- Default price is 4.50 -->
-                            <input type="number" id="price" value="4.50" min="0" step="any"
-                                class="w-2/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Price per unit">
-                            <select id="price-unit" class="custom-select w-1/3 p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
-                                <!-- Default selected to / Bushel -->
+                        <label for="price" class="block input-label font-medium text-gray-700 mb-1">Price (Base Currency) and Unit</label>
+                        <div class="flex space-x-2">
+                            <!-- Price Input -->
+                            <div class="flex items-center w-2/3 space-x-1">
+                                <span id="base-currency-symbol" class="text-lg text-gray-500 font-semibold">$</span>
+                                <input type="number" id="price" value="4.50" min="0" step="any"
+                                    class="w-full input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Price value">
+                            </div>
+                            <!-- Price Unit Select -->
+                            <select id="price-unit" class="custom-select w-1/3 input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
                                 <option value="bu" selected>/ Bushel</option>
                                 <option value="lbs">/ Pound (lbs)</option>
                                 <option value="metric_ton">/ Metric Ton</option>
@@ -161,16 +158,17 @@
                             </select>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- COLUMN 2: Currency Conversion Settings (No border-t needed here due to grid) -->
-                <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-700">Currency Conversion</h3>
+                <!-- COLUMN 2: Currency Settings and Exchange Rate -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-700">Currency and Factor Inputs</h3>
 
+                    <!-- 1. Base Currency -->
                     <div>
-                        <label for="base-currency" class="block text-sm font-medium text-gray-700 mb-1">Base Currency</label>
-                        <select id="base-currency" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
-                            <!-- Default selected to USD -->
+                        <label for="base-currency" class="block input-label font-medium text-gray-700 mb-1">Base Currency</label>
+                        <select id="base-currency" class="custom-select w-full input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
                             <option value="USD" selected>USD - United States Dollar</option>
                             <option value="EUR">EUR - Euro</option>
                             <option value="BRL">BRL - Brazilian Real</option>
@@ -181,63 +179,66 @@
                         </select>
                     </div>
 
+                    <!-- 2. Target Currency -->
                     <div>
-                        <label for="target-currency" class="block text-sm font-medium text-gray-700 mb-1">Target Currency</label>
-                        <select id="target-currency" class="custom-select w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
+                        <label for="target-currency" class="block input-label font-medium text-gray-700 mb-1">Target Currency</label>
+                        <select id="target-currency" class="custom-select w-full input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm">
                             <option value="EUR">EUR - Euro</option>
                             <option value="BRL">BRL - Brazilian Real</option>
                             <option value="USD">USD - United States Dollar</option>
                             <option value="GBP">GBP - British Pound</option>
                             <option value="CAD">CAD - Canadian Dollar</option>
                             <option value="AUD">AUD - Australian Dollar</option>
-                            <!-- Default selected to JPY -->
                             <option value="JPY" selected>JPY - Japanese Yen</option>
                         </select>
                     </div>
 
-                    <!-- Exchange Rate Input, now with live rate functionality -->
-                    <div class="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
-                        <span id="rate-label" class="text-sm font-medium text-gray-700 whitespace-nowrap">1 USD =</span>
-                        <input type="number" id="exchange-rate" value="0.92" min="0.001" step="any"
-                            class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" placeholder="Enter exchange rate">
-                        <span id="rate-target-symbol" class="text-xl text-gray-500 font-semibold whitespace-nowrap">¥</span>
-                        <!-- Spinner and Status Indicator -->
-                        <div id="rate-status" class="w-6 h-6 flex items-center justify-center">
-                            <svg id="rate-spinner" class="animate-spin h-5 w-5 text-blue-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
+                    <!-- 3. Exchange Rate Input - Only the input box is bordered, labels are outside -->
+                    <div>
+                        <label for="exchange-rate" class="block input-label font-medium text-gray-700 mb-1">Exchange Rate (live updated)</label>
+                        
+                        <!-- Flex container to hold the label, input, and symbol on the same line -->
+                        <div class="flex space-x-2 items-center">
+                            
+                            <!-- Leading Label (e.g., 1 USD =) -->
+                            <span id="rate-label" class="text-base text-gray-600 font-medium whitespace-nowrap">1 USD =</span>
+                            
+                            <!-- The single, bordered input box for the numerical rate -->
+                            <input type="number" id="exchange-rate" value="0.92" min="0.001" step="any"
+                                class="w-full input-field border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm" 
+                                placeholder="Rate">
+                            
+                            <!-- Trailing Symbol (e.g., ¥) -->
+                            <span id="rate-target-symbol" class="text-lg text-gray-500 font-semibold whitespace-nowrap">¥</span>
                         </div>
                     </div>
-                    <p id="rate-status-message" class="text-xs text-gray-500 text-center italic"></p>
                 </div>
             </div>
 
-            <!-- Calculation Button (Narrower and Centered) -->
-            <div class="pt-4 flex justify-center">
-                <button type="submit" id="calculate-btn" class="w-full md:w-1/3 py-3 rounded-xl font-bold text-lg shadow-md hover:shadow-lg">
+            <!-- Calculation Button -->
+            <div class="pt-2 flex justify-center">
+                <button type="submit" id="calculate-btn" class="w-full md:w-1/3 py-2 rounded-xl font-bold shadow-md hover:shadow-lg">
                     Calculate Conversion
                 </button>
             </div>
         </form>
 
-        <!-- 5. Results Display Section (Full width below the button) -->
-        <!-- Results are now in a two-column grid on desktop -->
-        <div id="results" class="mt-8 border-t border-gray-200 pt-6 p-2 rounded-lg bg-gray-50 hidden">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Conversion Results</h3>
+        <!-- 5. Results Display Section -->
+        <div id="results" class="mt-4 border-t border-gray-200 pt-4 p-2 rounded-lg bg-gray-50 hidden">
+            <h3 class="text-lg font-bold text-gray-800 mb-2 text-center">Conversion Results</h3>
 
             <div class="input-grid space-y-0">
                 
                 <!-- COLUMN 1 (Results): Mass & Volume Conversions -->
                 <div>
-                    <h4 class="text-sm font-semibold text-blue-700 pt-3">Mass & Volume Conversions</h4>
+                    <h4 class="text-xs font-semibold text-blue-700 pt-1">Mass & Volume Conversions</h4>
                     <!-- Volume/Mass Conversions -->
                     <div class="result-row">
                         <span>Total Volume (Bushels):</span>
                         <span id="result-bu">0.00</span>
                     </div>
                     <div class="result-row">
-                        <span>Total Mass (Pounds (lbs)):</span>
+                        <span>Total Mass (Pounds):</span>
                         <span id="result-lbs">0.00</span>
                     </div>
                     <div class="result-row">
@@ -256,32 +257,40 @@
 
                 <!-- COLUMN 2 (Results): Price & Value Estimates & Futures -->
                 <div>
-                    <h4 class="text-sm font-semibold text-green-700 pt-3 border-t md:border-t-0 border-gray-200">Price & Value Estimates</h4>
+                    <h4 class="text-xs font-semibold text-green-700 pt-1 border-t md:border-t-0 border-gray-200">Price & Value Estimates</h4>
 
-                    <!-- Price Per Unit Results -->
+                    <!-- 1. Price per Selected Price Unit (Target Currency) -->
                     <div id="price-per-price-unit-target-row" class="hidden result-row">
                         <span id="price-per-price-unit-target-label"></span>
                         <span id="price-per-price-unit-target"></span>
                     </div>
+                    
+                    <!-- DEDICATED ROW: Price per 1 Metric Ton (Target Currency) - SHOWN ONLY IF Price Unit != MT AND Input Unit != MT -->
+                    <div id="price-per-metric-ton-target-row" class="hidden result-row">
+                        <span id="price-per-metric-ton-target-label" class="font-medium text-gray-700"></span>
+                        <span id="price-per-metric-ton-target-value"></span>
+                    </div>
 
+                    <!-- 2. Price per Input Unit (Base Currency) -->
                     <div id="price-per-input-unit-base-row" class="hidden result-row">
                         <span id="price-per-input-unit-base-label"></span>
                         <span id="price-per-input-unit-base"></span>
                     </div>
 
+                    <!-- 3. Price per Input Unit (Target Currency) -->
                     <div id="price-per-input-unit-target-row" class="hidden result-row">
                         <span id="price-per-input-unit-target-label"></span>
                         <span id="price-per-input-unit-target-value"></span>
                     </div>
 
-                    <!-- Total Value Calculation -->
-                    <div id="value-result-row" class="hidden result-row bg-yellow-100 rounded-md my-2 py-3 border-none">
+                    <!-- 4. Total Value Calculation -->
+                    <div id="value-result-row" class="hidden result-row bg-yellow-100 rounded-md my-1 py-2 border-none">
                         <span class="font-bold text-gray-800">TOTAL ESTIMATED VALUE (<span id="target-currency-code-display">JPY</span>):</span>
-                        <span id="result-value" class="font-extrabold text-lg text-blue-700"></span>
+                        <span id="result-value" class="font-extrabold text-base text-blue-700"></span>
                     </div>
                     
-                    <h4 class="text-sm font-semibold text-red-700 pt-3 border-t border-gray-200">Futures Contracts</h4>
-                    <!-- Futures Contract Result (RESTORED) -->
+                    <h4 class="text-xs font-semibold text-red-700 pt-1 border-t border-gray-200">Futures Contracts</h4>
+                    <!-- Futures Contract Result -->
                     <div id="futures-result-row" class="result-row hidden">
                         <span id="futures-label"></span>
                         <span id="result-futures">0.00</span>
@@ -299,28 +308,24 @@
 
     <script>
         // --- Grain Constants (Weight in lbs per Bushel) ---
-        // AMENDED: Soybean Meal is now set precisely to 47.53 lbs/bu (2000 lbs / 42.08 bu).
         const CONVERSION_RATES = {
             corn: 56,       // lbs per bushel
             wheat: 60,      // lbs per bushel
             soybeans: 60,    // lbs per bushel
-            soybean_meal: 2000/42.08, // lbs per bushel (Updated for high accuracy)
+            soybean_meal: 2000/42.08, // lbs per bushel (Uses the required fractional calculation)
             canola: 50,
             barley: 48,
             sorghum: 56
         };
 
         // --- Futures Contract Constants (Units per 1 Contract) ---
+        // Note: Barley and Sorghum are intentionally excluded here to default to the corn contract.
         const FUTURES_CONTRACTS = {
             corn: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Corn (5,000 bu) Contracts:' },
             wheat: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Wheat (5,000 bu) Contracts:' },
             soybeans: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Soybean (5,000 bu) Contracts:' },
-            // Note: Soybean meal futures are based on Short Tons, not bushels, but this calculation
-            // uses the unit defined by the contract size. We use short_ton here.
             soybean_meal: { unit: 'short_ton', size: 100, exchange: 'CME', label: 'Soy Meal (100 sh.t) Contracts:' },
             canola: { unit: 'metric_ton', size: 20, exchange: 'ICE', label: 'Canola (20 MT) Contracts:' },
-            barley: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Barley (5,000 bu) Contracts:' },
-            sorghum: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Sorghum (5,000 bu) Contracts:' },
         };
 
         // --- Mass Constants ---
@@ -328,11 +333,11 @@
         const LBS_PER_KG = 2.20462;
         const LBS_PER_METRIC_TON = 2204.62;
         const LBS_PER_SHORT_TON = 2000;
-        const LBS_PER_60KG_BAG = KG_PER_BAG * LBS_PER_KG; // Approx 132.277 lbs
+        const LBS_PER_60KG_BAG = KG_PER_BAG * LBS_PER_KG; 
 
         // Map from select value to display text (for labels)
         const UNIT_DISPLAY = {
-            'lbs': 'Pounds (lbs)',
+            'lbs': 'Pounds (lbs)', // Used for price unit selection display
             'bu': 'Bushels',
             'metric_ton': 'Metric Ton',
             'short_ton': 'Short Ton',
@@ -368,8 +373,8 @@
         const rateLabelSpan = document.getElementById('rate-label');
         const rateTargetSymbolSpan = document.getElementById('rate-target-symbol');
         const targetCurrencyCodeDisplay = document.getElementById('target-currency-code-display');
-        const rateSpinner = document.getElementById('rate-spinner');
-        const rateStatusMessage = document.getElementById('rate-status-message');
+        
+        const messageBox = document.getElementById('message-box');
 
         const resultsDiv = document.getElementById('results');
         const resultLbs = document.getElementById('result-lbs');
@@ -379,8 +384,7 @@
         const resultBag60Kg = document.getElementById('result-bag-60kg');
         const valueResultRow = document.getElementById('value-result-row');
         const resultValue = document.getElementById('result-value');
-        const messageBox = document.getElementById('message-box');
-
+        
         // Futures Elements
         const futuresResultRow = document.getElementById('futures-result-row');
         const resultFutures = document.getElementById('result-futures');
@@ -391,6 +395,7 @@
         const pricePerPriceUnitTargetLabel = document.getElementById('price-per-price-unit-target-label');
         const pricePerPriceUnitTarget = document.getElementById('price-per-price-unit-target');
 
+        // Price per Input Unit (Base and Target)
         const pricePerInputUnitBaseRow = document.getElementById('price-per-input-unit-base-row');
         const pricePerInputUnitBaseLabel = document.getElementById('price-per-input-unit-base-label');
         const pricePerInputUnitBase = document.getElementById('price-per-input-unit-base');
@@ -398,13 +403,13 @@
         const pricePerInputUnitTargetRow = document.getElementById('price-per-input-unit-target-row');
         const pricePerInputUnitTargetLabel = document.getElementById('price-per-input-unit-target-label');
         const pricePerInputUnitTargetValueElement = document.getElementById('price-per-input-unit-target-value');
+        
+        // Dedicated Price per Metric Ton Elements
+        const pricePerMetricTonTargetRow = document.getElementById('price-per-metric-ton-target-row');
+        const pricePerMetricTonTargetLabel = document.getElementById('price-per-metric-ton-target-label');
+        const pricePerMetricTonTargetValueElement = document.getElementById('price-per-metric-ton-target-value');
 
-        // --- API Constants ---
-        const API_BASE_URL = 'https://open.er-api.com/v6/latest/USD'; // Reliable USD-based API
-        const FALLBACK_RATE = 0.92; // Default rate if API fails
-        let usdRates = {}; // Store all fetched rates (USD is base)
-        let isBaseRateLoaded = false;
-
+        
         /**
          * Displays a temporary message box.
          */
@@ -415,96 +420,78 @@
                 messageBox.classList.add('hidden');
             }, 3000);
         }
-
+        
         /**
-         * Fetches all currency rates relative to USD and caches them.
+         * Uses the Gemini API with Google Search grounding to fetch the live exchange rate.
          */
-        async function fetchBaseRates() {
-            if (isBaseRateLoaded) return true; // Only fetch once
-
-            rateSpinner.classList.remove('hidden');
-            rateStatusMessage.textContent = 'Loading currency rates...';
-            exchangeRateInput.setAttribute('readonly', 'true');
-
-            try {
-                // Implementing simple retry logic in case of transient network issues
-                let response;
-                let success = false;
-                for (let i = 0; i < 3; i++) {
-                    response = await fetch(API_BASE_URL);
-                    if (response.ok) {
-                        success = true;
-                        break;
-                    }
-                    // Exponential backoff
-                    await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i))); 
-                }
-
-                if (!success || !response) {
-                    throw new Error(`Failed to fetch after multiple retries.`);
-                }
-
-                const data = await response.json();
-
-                if (data.result === 'success' && data.rates) {
-                    usdRates = data.rates;
-                    isBaseRateLoaded = true;
-                    rateStatusMessage.textContent = 'Live currency rates loaded.';
-                    return true;
-                } else {
-                    throw new Error('Invalid response structure from API.');
-                }
-            } catch (error) {
-                console.error("Error fetching base rates:", error);
-                rateStatusMessage.textContent = 'Error: Failed to load live rates. Using manual rate.';
-                return false;
-            } finally {
-                rateSpinner.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Calculates and displays the exchange rate using the stored USD-based rates.
-         */
-        function calculateExchangeRate(baseCode, targetCode) {
-            rateSpinner.classList.add('hidden');
-
+        async function getLiveExchangeRate(baseCode, targetCode) {
             if (baseCode === targetCode) {
-                exchangeRateInput.value = 1.00;
-                exchangeRateInput.setAttribute('readonly', 'true');
-                rateStatusMessage.textContent = 'Currencies match (Rate: 1.00)';
-                return 1.00;
+                return 1;
             }
+            
+            // Set loading state
+            exchangeRateInput.disabled = true;
+            rateTargetSymbolSpan.classList.add('animate-pulse', 'text-yellow-600');
+            rateTargetSymbolSpan.textContent = '...';
 
-            // Check if rates were loaded successfully
-            if (!isBaseRateLoaded || Object.keys(usdRates).length === 0) {
-                exchangeRateInput.value = FALLBACK_RATE;
-                exchangeRateInput.removeAttribute('readonly');
-                rateStatusMessage.textContent = `Live rates unavailable. Using manual rate (${FALLBACK_RATE}).`;
-                return FALLBACK_RATE;
-            }
+            const userQuery = `What is the current exchange rate for 1 ${baseCode} to ${targetCode}? Respond only with the numerical rate, nothing else.`;
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: "You are a specialized currency exchange rate tool. Your task is to provide the current exchange rate for the requested pair. Respond *only* with the numerical value of the exchange rate, nothing else (no currency codes, no text explanation, no formatting). If you cannot find the rate, respond with '1'." }]
+                },
+            };
+            
+            const MAX_RETRIES = 3;
+            let delay = 1000;
+            
+            for (let i = 0; i < MAX_RETRIES; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
-            const rateFromUSD = usdRates[baseCode];
-            const rateToUSD = usdRates[targetCode];
+                    if (text) {
+                        // Clean up non-numeric characters except '.'
+                        const rate = parseFloat(text.replace(/[^0-9.]/g, '')); 
+                        if (!isNaN(rate) && rate > 0) {
+                            return rate;
+                        }
+                    }
+                    
+                    // If the response is not clean or parsing fails, fall through to retry
+                    throw new Error('Rate parsing failed or rate is invalid.');
 
-            if (rateFromUSD && rateToUSD) {
-                // Rate A to B = (USD to B) / (USD to A)
-                const calculatedRate = rateToUSD / rateFromUSD;
-
-                exchangeRateInput.value = calculatedRate.toFixed(4);
-                exchangeRateInput.setAttribute('readonly', 'true');
-                rateStatusMessage.textContent = 'Live rate updated.';
-                return calculatedRate;
-
-            } else {
-                exchangeRateInput.value = FALLBACK_RATE;
-                exchangeRateInput.removeAttribute('readonly');
-                rateStatusMessage.textContent = `Rate for ${baseCode} or ${targetCode} missing. Using manual rate (${FALLBACK_RATE}).`;
-                showMessage('Missing currency rate. Using manual fallback.');
-                return FALLBACK_RATE;
+                } catch (error) {
+                    if (i < MAX_RETRIES - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Exponential backoff
+                    } else {
+                        console.error("Failed to fetch live exchange rate after multiple retries. Using manual rate.", error);
+                        return null; // Return null on final failure
+                    }
+                } finally {
+                    // Remove loading state when exiting the loop (success or failure)
+                    exchangeRateInput.disabled = false;
+                    rateTargetSymbolSpan.classList.remove('animate-pulse', 'text-yellow-600');
+                    rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
+                }
             }
         }
+
+
+        // --- Conversion and Calculation Functions ---
 
         /**
          * Converts the input quantity to a base unit (lbs).
@@ -530,74 +517,67 @@
 
         /**
          * Calculates the total number of futures contracts based on the grain type and total mass/volume.
+         * For Barley and Sorghum, it defaults to Corn contracts.
          */
         function calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain) {
-            const contract = FUTURES_CONTRACTS[grain];
-            if (!contract) return 0;
+            
+            // Default Barley and Sorghum to Corn contracts
+            let contractGrain = grain;
+            if (grain === 'barley' || grain === 'sorghum') {
+                contractGrain = 'corn';
+            }
 
+            const contract = FUTURES_CONTRACTS[contractGrain];
+            
+            if (!contract) return null; 
+
+            // Calculate contracts based on the required unit for the contract type
+            let totalContracts;
             if (contract.unit === 'bu') {
-                return totalBushels / contract.size;
+                totalContracts = totalBushels / contract.size;
+            } else if (contract.unit === 'metric_ton') {
+                totalContracts = totalMetricTons / contract.size;
+            } else if (contract.unit === 'short_ton') {
+                totalContracts = totalShortTons / contract.size;
+            } else {
+                return null;
             }
-            if (contract.unit === 'metric_ton') {
-                return totalMetricTons / contract.size;
-            }
-            if (contract.unit === 'short_ton') {
-                return totalShortTons / contract.size;
-            }
-            return 0;
+            
+            return { contracts: totalContracts, label: contract.label };
         }
 
-        /**
-         * Calculates the total value based on the total mass and price per unit in the BASE currency.
-         */
-        function calculateBaseValue(totalLbs, price, priceUnit, grain) {
-            if (price <= 0) return 0;
-            const lbsPerBushel = CONVERSION_RATES[grain];
-            let rateLbs; // The price of 1 pound of grain
-
-            switch (priceUnit) {
-                case 'bu':
-                    rateLbs = price / lbsPerBushel;
-                    break;
-                case 'lbs':
-                    rateLbs = price;
-                    break;
-                case 'metric_ton':
-                    rateLbs = price / LBS_PER_METRIC_TON;
-                    break;
-                case 'short_ton':
-                    rateLbs = price / LBS_PER_SHORT_TON;
-                    break;
-                case 'bag_60kg':
-                    rateLbs = price / LBS_PER_60KG_BAG;
-                    break;
-                default:
-                    return 0;
-            }
-            return totalLbs * rateLbs;
-        }
 
         /**
-         * Updates the currency symbols and rate label based on selection, then calculates rate.
+         * Updates the currency symbols, rate label, and fetches the live exchange rate.
          */
-        async function updateCurrencyDisplay() {
+        async function updateCurrencyDisplay() { 
             const baseCode = baseCurrencySelect.value;
             const targetCode = targetCurrencySelect.value;
 
             // 1. Update Base Currency Symbol next to Price Input
             baseCurrencySymbolSpan.textContent = CURRENCY_MAP[baseCode]?.symbol || baseCode;
 
-            // 2. Update Exchange Rate Label
+            // 2. Update Exchange Rate Label and Target Symbol
             rateLabelSpan.textContent = `1 ${baseCode} =`;
-            rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
-
+            
             // 3. Update Result Title
             targetCurrencyCodeDisplay.textContent = targetCode;
 
-            // 4. Calculate the exchange rate
-            calculateExchangeRate(baseCode, targetCode);
+            // 4. Fetch and update live exchange rate
+            const liveRate = await getLiveExchangeRate(baseCode, targetCode);
 
-            // 5. Trigger recalculation if inputs are valid
+            if (liveRate !== null && liveRate !== undefined) {
+                // If a valid live rate is fetched, update the input field, which user can override
+                exchangeRateInput.value = liveRate.toFixed(4); 
+            } else if (baseCode === targetCode) {
+                 // If currencies are the same, ensure the rate is 1
+                 exchangeRateInput.value = 1.0000;
+            } else {
+                // If fetching fails and rates are different, inform the user but keep the current manual rate
+                showMessage(`Failed to fetch live rate for ${baseCode}/${targetCode}. Please use the manually entered rate.`);
+            }
+
+            // 5. Trigger recalculation immediately after rate is updated
             if (parseFloat(quantityInput.value) > 0) {
                  handleConversion({ preventDefault: () => {} });
             }
@@ -660,12 +640,11 @@
             resultBag60Kg.textContent = numberFormatter.format(totalBag60Kg);
 
             // Futures Contracts Result
-            const totalFutures = calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain);
-            const futuresContractInfo = FUTURES_CONTRACTS[grain];
+            const futuresResult = calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain);
 
-            if (futuresContractInfo) {
-                futuresLabel.textContent = futuresContractInfo.label;
-                resultFutures.textContent = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(totalFutures);
+            if (futuresResult) {
+                futuresLabel.textContent = futuresResult.label;
+                resultFutures.textContent = new Intl.NumberFormat(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(futuresResult.contracts);
                 futuresResultRow.classList.remove('hidden');
             } else {
                 futuresResultRow.classList.add('hidden');
@@ -675,8 +654,29 @@
             const hasPrice = !isNaN(price) && price > 0;
 
             if (hasPrice) {
-                // Calculate Total Value in BASE currency
-                const totalBaseValue = calculateBaseValue(totalLbs, price, priceUnit, grain);
+                
+                // 3. Calculate price of 1 lb in BASE currency (rateLbs)
+                let rateLbs = 0;
+                switch (priceUnit) {
+                    case 'bu':
+                        rateLbs = price / lbsPerBushel;
+                        break;
+                    case 'lbs':
+                        rateLbs = price;
+                        break;
+                    case 'metric_ton':
+                        rateLbs = price / LBS_PER_METRIC_TON;
+                        break;
+                    case 'short_ton':
+                        rateLbs = price / LBS_PER_SHORT_TON;
+                        break;
+                    case 'bag_60kg':
+                        rateLbs = price / LBS_PER_60KG_BAG;
+                        break;
+                }
+
+                // Total Value in Base Currency
+                const totalBaseValue = totalLbs * rateLbs;
 
                 // 1. Price per Selected Price Unit (Target Currency)
                 const pricePerPriceUnitTargetValue = price * rate;
@@ -684,20 +684,35 @@
                 pricePerPriceUnitTarget.textContent = formatCurrency(pricePerPriceUnitTargetValue, targetCurrencyCode);
                 pricePerPriceUnitTargetRow.classList.remove('hidden');
 
+                
+                // --- Price per 1 Metric Ton (Target Currency) ---
+                // Show this row ONLY IF:
+                // 1. The selected price unit is NOT metric_ton.
+                // 2. The selected input unit is NOT metric_ton.
+                if (priceUnit !== 'metric_ton' && inputUnit !== 'metric_ton') {
+                    const pricePerMT_TargetValue = rateLbs * LBS_PER_METRIC_TON * rate;
+                    pricePerMetricTonTargetLabel.textContent = `Price per 1 Metric Ton (${targetCurrencyCode}):`;
+                    pricePerMetricTonTargetValueElement.textContent = formatCurrency(pricePerMT_TargetValue, targetCurrencyCode);
+                    pricePerMetricTonTargetRow.classList.remove('hidden');
+                } else {
+                    pricePerMetricTonTargetRow.classList.add('hidden');
+                }
+                
+
                 // 2. Price per Input Unit (Base Currency)
                 const pricePerInputUnitBaseValue = totalBaseValue / quantity;
                 pricePerInputUnitBaseLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${baseCurrencyCode}):`;
                 pricePerInputUnitBase.textContent = formatCurrency(pricePerInputUnitBaseValue, baseCurrencyCode);
                 pricePerInputUnitBaseRow.classList.remove('hidden');
 
-                // 3. Price per Input Unit (Target Currency)
+                // 4. Price per Input Unit (Target Currency)
                 const pricePerInputUnitTargetValue = pricePerInputUnitBaseValue * rate;
                 pricePerInputUnitTargetLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${targetCurrencyCode}):`;
                 pricePerInputUnitTargetValueElement.textContent = formatCurrency(pricePerInputUnitTargetValue, targetCurrencyCode);
                 pricePerInputUnitTargetRow.classList.remove('hidden');
 
 
-                // 4. Total Estimated Value (Target Currency)
+                // 5. Total Estimated Value (Target Currency)
                 const finalValue = totalBaseValue * rate;
                 resultValue.textContent = formatCurrency(finalValue, targetCurrencyCode);
                 valueResultRow.classList.remove('hidden');
@@ -705,6 +720,7 @@
                 // Hide all price/value rows if no price is entered
                 valueResultRow.classList.add('hidden');
                 pricePerPriceUnitTargetRow.classList.add('hidden');
+                pricePerMetricTonTargetRow.classList.add('hidden');
                 pricePerInputUnitBaseRow.classList.add('hidden');
                 pricePerInputUnitTargetRow.classList.add('hidden');
             }
@@ -716,11 +732,11 @@
         // --- Event Listeners ---
         form.addEventListener('submit', handleConversion);
 
-        // Listen for changes on currency selects to trigger rate fetch and update
+        // Listen for changes on currency selects to trigger symbol/label update and API call
         baseCurrencySelect.addEventListener('change', updateCurrencyDisplay);
         targetCurrencySelect.addEventListener('change', updateCurrencyDisplay);
 
-        // Listen for changes on other inputs to trigger conversion using current rate
+        // Listen for changes on all other inputs to trigger conversion
         exchangeRateInput.addEventListener('input', handleConversion);
         priceInput.addEventListener('input', handleConversion);
         quantityInput.addEventListener('input', handleConversion);
@@ -731,10 +747,8 @@
 
         // Initial setup and calculation on load
         document.addEventListener('DOMContentLoaded', async () => {
-            // Load base rates first
-            await fetchBaseRates();
-            // Then update the display and perform the first calculation
-            updateCurrencyDisplay();
+            // Initiate the first API call to populate the initial rate
+            await updateCurrencyDisplay();
         });
 
     </script>
