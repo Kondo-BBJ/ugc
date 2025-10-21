@@ -265,7 +265,7 @@
                         <span id="price-per-price-unit-target"></span>
                     </div>
                     
-                    <!-- DEDICATED ROW: Price per 1 Metric Ton (Target Currency) - SHOWN ONLY IF Price Unit != MT AND Input Unit != MT -->
+                    <!-- DEDICATED ROW: Price per Metric Ton (Target Currency) - SHOWN ONLY IF Price Unit != MT AND Input Unit != MT -->
                     <div id="price-per-metric-ton-target-row" class="hidden result-row">
                         <span id="price-per-metric-ton-target-label" class="font-medium text-gray-700"></span>
                         <span id="price-per-metric-ton-target-value"></span>
@@ -323,8 +323,10 @@
             corn: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Corn (5,000 bu) Contracts:' },
             wheat: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Wheat (5,000 bu) Contracts:' },
             soybeans: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Soybean (5,000 bu) Contracts:' },
-            soybean_meal: { unit: 'short_ton', size: 100, exchange: 'CME', label: 'Soy Meal (100 sh.t) Contracts:' },
-            canola: { unit: 'metric_ton', size: 20, exchange: 'ICE', label: 'Canola (20 MT) Contracts:' },
+            // UPDATED LABEL: from 'Soy Meal (100 sh.t) Contracts:' to full text
+            soybean_meal: { unit: 'short_ton', size: 100, exchange: 'CME', label: 'Soybean Meal (100 Short Tons) Contracts:' },
+            // AMENDED LABEL: from 'Canola (20 MT) Contracts:' to full text
+            canola: { unit: 'metric_ton', size: 20, exchange: 'ICE', label: 'Canola (20 Metric Tons) Contracts:' },
         };
 
         // --- Mass Constants ---
@@ -337,7 +339,7 @@
         // Map from select value to display text (for labels)
         const UNIT_DISPLAY = {
             'lbs': 'Pounds (lbs)',
-            'bu': 'Bushels',
+            'bu': 'Bushel', 
             'metric_ton': 'Metric Ton',
             'short_ton': 'Short Ton',
             'bag_60kg': 'Bag (60 kg)'
@@ -352,6 +354,17 @@
             'CAD': { symbol: '$', locale: 'en-CA' },
             'AUD': { symbol: '$', locale: 'en-AU' },
             'JPY': { symbol: '¥', locale: 'ja-JP' },
+        };
+
+        // --- Local Storage Keys ---
+        const STORAGE_KEYS = {
+            grain: 'gc_grain',
+            quantity: 'gc_quantity',
+            inputUnit: 'gc_input_unit',
+            price: 'gc_price',
+            priceUnit: 'gc_price_unit',
+            baseCurrency: 'gc_base_currency',
+            targetCurrency: 'gc_target_currency'
         };
 
 
@@ -419,6 +432,56 @@
             setTimeout(() => {
                 messageBox.classList.add('hidden');
             }, 3000);
+        }
+
+        /**
+         * Saves current input values to localStorage.
+         */
+        function saveInputValues() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.grain, grainTypeSelect.value);
+                localStorage.setItem(STORAGE_KEYS.quantity, quantityInput.value);
+                localStorage.setItem(STORAGE_KEYS.inputUnit, inputUnitSelect.value);
+                localStorage.setItem(STORAGE_KEYS.price, priceInput.value);
+                localStorage.setItem(STORAGE_KEYS.priceUnit, priceUnitSelect.value);
+                localStorage.setItem(STORAGE_KEYS.baseCurrency, baseCurrencySelect.value);
+                localStorage.setItem(STORAGE_KEYS.targetCurrency, targetCurrencySelect.value);
+            } catch (e) {
+                console.error("Could not save to local storage:", e);
+            }
+        }
+        
+        /**
+         * Restores input values from localStorage on page load.
+         */
+        function restoreInputValues() {
+            const setStoredValue = (element, key) => {
+                const storedValue = localStorage.getItem(key);
+                if (storedValue) {
+                    // Check if a select option exists before setting
+                    if (element.tagName === 'SELECT') {
+                        const optionExists = Array.from(element.options).some(option => option.value === storedValue);
+                        if (optionExists) {
+                            element.value = storedValue;
+                        }
+                    } else {
+                        element.value = storedValue;
+                    }
+                }
+            };
+            
+            try {
+                setStoredValue(grainTypeSelect, STORAGE_KEYS.grain);
+                setStoredValue(quantityInput, STORAGE_KEYS.quantity);
+                setStoredValue(inputUnitSelect, STORAGE_KEYS.inputUnit);
+                setStoredValue(priceInput, STORAGE_KEYS.price);
+                setStoredValue(priceUnitSelect, STORAGE_KEYS.priceUnit);
+                setStoredValue(baseCurrencySelect, STORAGE_KEYS.baseCurrency);
+                setStoredValue(targetCurrencySelect, STORAGE_KEYS.targetCurrency);
+                // NOTE: Exchange Rate is deliberately NOT restored per user request.
+            } catch (e) {
+                console.error("Could not restore from local storage:", e);
+            }
         }
         
         /**
@@ -600,6 +663,7 @@
 
             if (isNaN(quantity) || quantity <= 0) {
                 resultsDiv.classList.add('hidden');
+                saveInputValues(); // Still save state if quantity is invalid, but don't show results
                 return;
             }
 
@@ -663,18 +727,18 @@
 
                 // 1. Price per Selected Price Unit (Target Currency)
                 const pricePerPriceUnitTargetValue = price * rate;
-                pricePerPriceUnitTargetLabel.textContent = `Price per 1 ${UNIT_DISPLAY[priceUnit]} (${targetCurrencyCode}):`;
+                pricePerPriceUnitTargetLabel.textContent = `Price per ${UNIT_DISPLAY[priceUnit]} (${targetCurrencyCode}):`;
                 pricePerPriceUnitTarget.textContent = formatCurrency(pricePerPriceUnitTargetValue, targetCurrencyCode);
                 pricePerPriceUnitTargetRow.classList.remove('hidden');
 
                 
-                // --- Price per 1 Metric Ton (Target Currency) ---
+                // --- Price per Metric Ton (Target Currency) ---
                 // Show this row ONLY IF:
                 // 1. The selected price unit is NOT metric_ton.
                 // 2. The selected input unit is NOT metric_ton.
                 if (priceUnit !== 'metric_ton' && inputUnit !== 'metric_ton') {
                     const pricePerMT_TargetValue = rateLbs * LBS_PER_METRIC_TON * rate;
-                    pricePerMetricTonTargetLabel.textContent = `Price per 1 Metric Ton (${targetCurrencyCode}):`;
+                    pricePerMetricTonTargetLabel.textContent = `Price per Metric Ton (${targetCurrencyCode}):`;
                     pricePerMetricTonTargetValueElement.textContent = formatCurrency(pricePerMT_TargetValue, targetCurrencyCode);
                     pricePerMetricTonTargetRow.classList.remove('hidden');
                 } else {
@@ -684,13 +748,13 @@
 
                 // 2. Price per Input Unit (Base Currency)
                 const pricePerInputUnitBaseValue = totalBaseValue / quantity;
-                pricePerInputUnitBaseLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${baseCurrencyCode}):`;
+                pricePerInputUnitBaseLabel.textContent = `Price per ${UNIT_DISPLAY[inputUnit]} (${baseCurrencyCode}):`;
                 pricePerInputUnitBase.textContent = formatCurrency(pricePerInputUnitBaseValue, baseCurrencyCode);
                 pricePerInputUnitBaseRow.classList.remove('hidden');
 
                 // 4. Price per Input Unit (Target Currency)
                 const pricePerInputUnitTargetValue = pricePerInputUnitBaseValue * rate;
-                pricePerInputUnitTargetLabel.textContent = `Price per 1 ${UNIT_DISPLAY[inputUnit]} (${targetCurrencyCode}):`;
+                pricePerInputUnitTargetLabel.textContent = `Price per ${UNIT_DISPLAY[inputUnit]} (${targetCurrencyCode}):`;
                 pricePerInputUnitTargetValueElement.textContent = formatCurrency(pricePerInputUnitTargetValue, targetCurrencyCode);
                 pricePerInputUnitTargetRow.classList.remove('hidden');
 
@@ -710,6 +774,9 @@
 
             // Show results area
             resultsDiv.classList.remove('hidden');
+
+            // Save current state for next load
+            saveInputValues();
         }
 
         // --- Event Listeners ---
@@ -730,7 +797,10 @@
 
         // Initial setup and calculation on load
         document.addEventListener('DOMContentLoaded', async () => {
-            // Initiate the first API call to populate the initial rate
+            // 1. Restore previous values (except exchange rate)
+            restoreInputValues();
+
+            // 2. Initiate the first API call to populate the initial rate, and trigger calculation
             await updateCurrencyDisplay();
         });
 
