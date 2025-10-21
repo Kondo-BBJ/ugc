@@ -11,11 +11,10 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7f9fc;
-            /* Align items to the top (start) */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Start from the top */
+            justify-content: flex-start;
             align-items: center;
             padding: 0.5rem; 
         }
@@ -48,7 +47,7 @@
             transform: scale(0.99);
         }
 
-        /* Result box styles - Restored standard font size and padding */
+        /* Result box styles */
         .result-row {
             padding: 0.75rem 0; 
             margin: 0 0.5rem;
@@ -82,7 +81,7 @@
         .input-field {
             padding: 0.5rem; 
         }
-        /* Reverted label font size to text-sm equivalent */
+        /* Label font size */
         .input-label {
             font-size: 0.875rem; 
         }
@@ -91,7 +90,6 @@
 <body>
     <!-- HEADER -->
     <header class="text-center mb-4 mt-2">
-        <!-- Title font size is text-3xl -->
         <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">Grain Unit Converter</h1>
         <p class="text-sm text-gray-500 mt-0.5">Quantity, Price, and Value Calculator</p>
     </header>
@@ -195,7 +193,7 @@
 
                     <!-- 3. Exchange Rate Input - Only the input box is bordered, labels are outside -->
                     <div>
-                        <label for="exchange-rate" class="block input-label font-medium text-gray-700 mb-1">Exchange Rate (live updated)</label>
+                        <label for="exchange-rate" class="block input-label font-medium text-gray-700 mb-1">Exchange Rate (Use Manual Input if API Fails)</label>
                         
                         <!-- Flex container to hold the label, input, and symbol on the same line -->
                         <div class="flex space-x-2 items-center">
@@ -211,6 +209,8 @@
                             <!-- Trailing Symbol (e.g., ¥) -->
                             <span id="rate-target-symbol" class="text-lg text-gray-500 font-semibold whitespace-nowrap">¥</span>
                         </div>
+                         <!-- Live Rate Status -->
+                        <p id="rate-status" class="text-xs text-gray-500 mt-1 text-right"></p>
                     </div>
                 </div>
             </div>
@@ -319,7 +319,6 @@
         };
 
         // --- Futures Contract Constants (Units per 1 Contract) ---
-        // Note: Barley and Sorghum are intentionally excluded here to default to the corn contract.
         const FUTURES_CONTRACTS = {
             corn: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Corn (5,000 bu) Contracts:' },
             wheat: { unit: 'bu', size: 5000, exchange: 'CME', label: 'Wheat (5,000 bu) Contracts:' },
@@ -337,7 +336,7 @@
 
         // Map from select value to display text (for labels)
         const UNIT_DISPLAY = {
-            'lbs': 'Pounds (lbs)', // Used for price unit selection display
+            'lbs': 'Pounds (lbs)',
             'bu': 'Bushels',
             'metric_ton': 'Metric Ton',
             'short_ton': 'Short Ton',
@@ -373,6 +372,7 @@
         const rateLabelSpan = document.getElementById('rate-label');
         const rateTargetSymbolSpan = document.getElementById('rate-target-symbol');
         const targetCurrencyCodeDisplay = document.getElementById('target-currency-code-display');
+        const rateStatus = document.getElementById('rate-status');
         
         const messageBox = document.getElementById('message-box');
 
@@ -422,73 +422,58 @@
         }
         
         /**
-         * Uses the Gemini API with Google Search grounding to fetch the live exchange rate.
+         * Fetches the live exchange rate from an external public API.
          */
         async function getLiveExchangeRate(baseCode, targetCode) {
+            // If currencies are the same, rate is 1.0, no API call needed.
             if (baseCode === targetCode) {
-                return 1;
+                return 1.0;
             }
             
-            // Set loading state
+            // Start loading state
             exchangeRateInput.disabled = true;
             rateTargetSymbolSpan.classList.add('animate-pulse', 'text-yellow-600');
             rateTargetSymbolSpan.textContent = '...';
-
-            const userQuery = `What is the current exchange rate for 1 ${baseCode} to ${targetCode}? Respond only with the numerical rate, nothing else.`;
-            // SOLUTION: Use __api_key global variable for deployment in this environment.
-            const apiKey = typeof __api_key !== 'undefined' ? __api_key : ''; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                tools: [{ "google_search": {} }],
-                systemInstruction: {
-                    parts: [{ text: "You are a specialized currency exchange rate tool. Your task is to provide the current exchange rate for the requested pair. Respond *only* with the numerical value of the exchange rate, nothing else (no currency codes, no text explanation, no formatting). If you cannot find the rate, respond with '1'." }]
-                },
-            };
+            rateStatus.textContent = 'Fetching live rate...';
             
-            const MAX_RETRIES = 3;
-            let delay = 1000;
+            // Use the open exchange rate API (free, no API key needed for basic usage)
+            const apiUrl = `https://open.er-api.com/v6/latest/${baseCode}`;
             
-            for (let i = 0; i < MAX_RETRIES; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    
-                    const result = await response.json();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            let rate = null;
 
-                    if (text) {
-                        // Clean up non-numeric characters except '.'
-                        const rate = parseFloat(text.replace(/[^0-9.]/g, '')); 
-                        if (!isNaN(rate) && rate > 0) {
-                            return rate;
-                        }
-                    }
-                    
-                    // If the response is not clean or parsing fails, fall through to retry
-                    throw new Error('Rate parsing failed or rate is invalid.');
-
-                } catch (error) {
-                    if (i < MAX_RETRIES - 1) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // Exponential backoff
-                    } else {
-                        console.error("Failed to fetch live exchange rate after multiple retries. Using manual rate.", error);
-                        return null; // Return null on final failure
-                    }
-                } finally {
-                    // Remove loading state when exiting the loop (success or failure)
-                    exchangeRateInput.disabled = false;
-                    rateTargetSymbolSpan.classList.remove('animate-pulse', 'text-yellow-600');
-                    rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
+            try {
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
+                
+                const data = await response.json();
+                
+                if (data.result === 'success' && data.rates && data.rates[targetCode]) {
+                    rate = data.rates[targetCode];
+                    rateStatus.textContent = 'Live rate updated.';
+                    rateStatus.classList.remove('text-red-500');
+                    rateStatus.classList.add('text-green-600');
+                } else {
+                    throw new Error('Invalid response structure or target currency missing.');
+                }
+            } catch (error) {
+                console.error("Failed to fetch live exchange rate from external API:", error);
+                rateStatus.textContent = 'Failed to fetch live rate. Using manual input.';
+                rateStatus.classList.remove('text-green-600');
+                rateStatus.classList.add('text-red-500');
+
+                // Fallback: If API fails, return the current manual input rate
+                return parseFloat(exchangeRateInput.value) || 1.0;
+            } finally {
+                // Remove loading state
+                exchangeRateInput.disabled = false;
+                rateTargetSymbolSpan.classList.remove('animate-pulse', 'text-yellow-600');
+                rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
             }
+            
+            return rate;
         }
 
 
@@ -518,7 +503,6 @@
 
         /**
          * Calculates the total number of futures contracts based on the grain type and total mass/volume.
-         * For Barley and Sorghum, it defaults to Corn contracts.
          */
         function calculateFuturesContracts(totalBushels, totalMetricTons, totalShortTons, grain) {
             
@@ -560,6 +544,7 @@
 
             // 2. Update Exchange Rate Label and Target Symbol
             rateLabelSpan.textContent = `1 ${baseCode} =`;
+            rateTargetSymbolSpan.textContent = CURRENCY_MAP[targetCode]?.symbol || targetCode;
             
             // 3. Update Result Title
             targetCurrencyCodeDisplay.textContent = targetCode;
@@ -567,17 +552,14 @@
             // 4. Fetch and update live exchange rate
             const liveRate = await getLiveExchangeRate(baseCode, targetCode);
 
-            if (liveRate !== null && liveRate !== undefined) {
-                // If a valid live rate is fetched, update the input field, which user can override
-                exchangeRateInput.value = liveRate.toFixed(4); 
-            } else if (baseCode === targetCode) {
+            if (baseCode === targetCode) {
                  // If currencies are the same, ensure the rate is 1
                  exchangeRateInput.value = 1.0000;
-            } else {
-                // If fetching fails and rates are different, inform the user but keep the current manual rate
-                showMessage(`Failed to fetch live rate for ${baseCode}/${targetCode}. Please use the manually entered rate.`);
-            }
-
+            } else if (liveRate !== null && liveRate !== undefined) {
+                // If a valid rate is fetched (API success or fallback to current rate), update the input field
+                exchangeRateInput.value = liveRate.toFixed(4); 
+            } 
+            
             // 5. Trigger recalculation immediately after rate is updated
             if (parseFloat(quantityInput.value) > 0) {
                  handleConversion({ preventDefault: () => {} });
