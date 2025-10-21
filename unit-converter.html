@@ -435,7 +435,8 @@
             rateTargetSymbolSpan.textContent = '...';
 
             const userQuery = `What is the current exchange rate for 1 ${baseCode} to ${targetCode}? Respond only with the numerical rate, nothing else.`;
-            const apiKey = ""; 
+            // SOLUTION: Use __api_key global variable for deployment in this environment.
+            const apiKey = typeof __api_key !== 'undefined' ? __api_key : ''; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             const payload = {
