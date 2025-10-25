@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laytime Calculator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind slate-50 - Consistent BG */
+        }
+        /* Custom scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #93c5fd; /* Tailwind blue-300 */
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background-color: #f1f5f9; /* Tailwind slate-100 */
+        }
+        /* Applied to the INPUT card only */
+        .input-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0; /* Tailwind slate-200 */
+        }
+        /* Style for the calculation summary result area */
+        .result-box {
+            transition: all 0.3s ease-in-out;
+            transform-origin: top;
+        }
+
+        /* Defined 4 explicit columns for the exception row and header on large screens */
+        .exception-row, .exception-header-row {
+            display: grid;
+            /* 1fr for Start, 1fr for End, 1.5fr for Reason, minmax(0, 40px) for Delete button */
+            grid-template-columns: 1fr 1fr 1.5fr minmax(0, 40px);
+            gap: 1rem;
+        }
+        /* Adjusting for mobile to stack elements */
+        @media (max-width: 768px) {
+             .exception-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                padding: 1rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+            }
+             .exception-row > div:last-child {
+                /* The remove button container */
+                margin-top: 0.5rem;
+                justify-self: end; /* Move button to the right */
+            }
+        }
+        /* Custom class to position the clear button relative to the container */
+        .port-input-wrapper {
+            position: relative;
+        }
+        /* Helper to format date/time */
+        .datetime-output {
+            font-size: 0.9rem; /* Slightly smaller */
+            color: #4b5563; /* Tailwind gray-600 */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center min-h-screen">
+
+    <!-- HEADER: MOVED OUTSIDE THE WHITE BOX -->
+    <div class="text-center mb-10 w-full max-w-6xl">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+            Laytime Calculator
+        </h1>
+        <p class="mt-2 text-lg text-gray-600">
+            Calculate the duration of allowed laytime, time used, and resulting demurrage/despatch.
+        </p>
+    </div>
+    <!-- END HEADER -->
+
+    <!-- MAIN CONTAINER (Only for width, no card styling applied here) -->
+    <div class="w-full max-w-6xl">
+
+        <!-- MAIN LAYOUT: Two Columns on Desktop -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- COLUMN 1 & 2: INPUT CARD (Now holds the main card styling) -->
+            <div class="lg:col-span-2 space-y-8 bg-white input-card rounded-xl p-6 md:p-10">
+
+                <!-- SECTION 1: VESSEL AND PORT DETAILS -->
+                <section class="p-0">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6 border-b-2 pb-3">Vessel and Port Details</h2>
+
+                    <!-- Row 1: Vessel, Owners, Charterers -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label for="vesselName" class="block text-sm font-medium text-gray-700">Vessel Name</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="text" id="vesselName" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                        <div>
+                            <label for="owners" class="block text-sm font-medium text-gray-700">Owners</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="text" id="owners" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                        <div>
+                            <label for="charterers" class="block text-sm font-medium text-gray-700">Charterers</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="text" id="charterers" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Port Names -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Port 1 (Mandatory - Label changes based on optional ports) -->
+                        <div>
+                            <!-- NOTE: The label text is set dynamically in JavaScript -->
+                            <label id="portName1Label" for="portName1" class="block text-sm font-medium text-gray-700">Port Name</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="text" id="portName1" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <!-- Port 2 (Optional) -->
+                        <div class="port-input-wrapper relative">
+                            <!-- Checkbox/Activation area (Visible initially, hidden on check) -->
+                            <div id="port2Checker" class="h-full flex items-center space-x-2 transition-all duration-300">
+                                <input id="port2Active" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                <label for="port2Active" class="text-sm font-medium text-gray-700 cursor-pointer select-none">Add 2nd Port</label>
+                            </div>
+
+                            <!-- Input Area (Hidden initially, visible on check or if value exists) -->
+                            <div id="port2InputContainer" class="absolute inset-0 hidden">
+                                <label for="portName2" class="block text-sm font-medium text-gray-700">Port Name 2</label>
+                                <div class="relative">
+                                     <!-- UPDATED BORDER STYLING -->
+                                    <input type="text" id="portName2" placeholder="Second Port"
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm pr-8 p-2 bg-white focus:border-indigo-600 focus:ring-indigo-600">
+                                    <button type="button" id="clearPort2Btn" title="Clear Port 2"
+                                            class="absolute right-0 top-0 mt-2 mr-1 h-7 w-7 text-gray-400 hover:text-red-500 transition focus:outline-none flex items-center justify-center">
+                                        <!-- X icon SVG -->
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Port 3 (Optional) - Hidden unless Port 2 is active/filled -->
+                        <div id="port3Wrapper" class="port-input-wrapper relative hidden">
+                            <!-- Checkbox/Activation area (Visible initially, hidden on check) -->
+                            <div id="port3Checker" class="h-full flex items-center space-x-2 transition-all duration-300">
+                                <input id="port3Active" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                <label for="port3Active" class="text-sm font-medium text-gray-700 cursor-pointer select-none">Add 3rd Port</label>
+                            </div>
+
+                            <!-- Input Area (Hidden initially, visible on check or if value exists) -->
+                            <div id="port3InputContainer" class="absolute inset-0 hidden">
+                                <label for="portName3" class="block text-sm font-medium text-gray-700">Port Name 3</label>
+                                <div class="relative">
+                                    <!-- UPDATED BORDER STYLING -->
+                                    <input type="text" id="portName3" placeholder="Third Port"
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm pr-8 p-2 bg-white focus:border-indigo-600 focus:ring-indigo-600">
+                                    <button type="button" id="clearPort3Btn" title="Clear Port 3"
+                                            class="absolute right-0 top-0 mt-2 mr-1 h-7 w-7 text-gray-400 hover:text-red-500 transition focus:outline-none flex items-center justify-center">
+                                        <!-- X icon SVG -->
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: KEY DATES -->
+                <section class="p-0 pt-4">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6 border-b-2 pb-3">Key Dates & Times</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                        <!-- 1. NOR Tendered -->
+                        <div class="md:col-span-2">
+                            <label for="noticeTendered" class="block text-sm font-medium text-gray-700">NOR Tendered</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="datetime-local" id="noticeTendered"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <!-- 2. NOR Accepted (NEW) -->
+                        <div class="md:col-span-2">
+                            <label for="noticeAccepted" class="block text-sm font-medium text-gray-700">NOR Accepted</label>
+                             <!-- UPDATED BORDER STYLING -->
+                            <input type="datetime-local" id="noticeAccepted"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <!-- 3. Laytime Commenced -->
+                        <div class="md:col-span-2">
+                            <label for="laytimeCommenced" class="block text-sm font-medium text-gray-700">Laytime Commenced</label>
+                             <!-- UPDATED BORDER STYLING -->
+                            <input type="datetime-local" id="laytimeCommenced"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <!-- 4. Operations Completed (Used for calculation end) -->
+                        <div class="md:col-span-2">
+                            <label for="cargoCompleted" class="block text-sm font-medium text-gray-700">Operations Completed</label>
+                             <!-- UPDATED BORDER STYLING -->
+                            <input type="datetime-local" id="cargoCompleted"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: LAYTIME ALLOWED & RATES -->
+                <section class="p-0 pt-4">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6 border-b-2 pb-3">Laytime Allowed & Rates</h2>
+                    <!-- UPDATED: Grid layout changed to accommodate 4 fields responsively -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label for="cargoQuantity" class="block text-sm font-medium text-gray-700">Cargo Quantity (MT)</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="number" id="cargoQuantity" min="1"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                        <div>
+                            <!-- LABEL AMENDED: Load/Disch (MT/Day) -->
+                            <label for="loadDischRate" class="block text-sm font-medium text-gray-700">Load/Disch (MT/Day)</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="number" id="loadDischRate" min="1"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+
+                        <!-- Laytime Terms -->
+                        <div>
+                            <label for="laytimeTerms" class="block text-sm font-medium text-gray-700">Laytime Terms</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <select id="laytimeTerms" class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600 bg-white">
+                                <option value="SHINC">SHINC (Sundays & Holidays Included)</option>
+                                <option value="SHEXEIU">SHEXEIU (S&H Excepted, Even If Used)</option>
+                                <option value="SHEXUU">SHEXUU (S&H Excepted, Unless Used)</option>
+                                <option value="SSHEXEIU">SSHEXEIU (Sats, S&H Excepted, Even If Used)</option>
+                                <option value="SSHEXUU">SSHEXUU (Sats, S&H Excepted, Unless Used)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <!-- LABEL AMENDED: Demurrage (USD/Day) -->
+                            <label for="demurrageRate" class="block text-sm font-medium text-gray-700">Demurrage (USD/Day)</label>
+                            <!-- UPDATED BORDER STYLING -->
+                            <input type="number" id="demurrageRate" min="1"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 focus:border-indigo-600 focus:ring-indigo-600">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-indigo-50 rounded-md text-sm text-indigo-700">
+                        <span class="font-semibold">Laytime Allowed:</span> <span id="laytimeAllowedDays">0.0000</span> Days
+                        (Calculated from Cargo Quantity / Load/Disch Rate)
+                    </div>
+                </section>
+
+                <!-- SECTION 4: EXCLUDED PERIODS -->
+                <section class="p-0 pt-4 custom-scrollbar max-h-96">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-6 border-b-2 pb-3 flex justify-between items-center">
+                        Excluded Time
+                        <button id="addExceptionBtn" class="px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-600 transition">
+                            + Add Exception
+                        </button>
+                    </h2>
+
+                    <!-- Column Headers - Hidden on mobile, shown on desktop -->
+                    <div class="hidden md:grid exception-header-row text-xs font-semibold uppercase text-gray-500 pb-2 mb-2 border-b border-gray-300">
+                        <div>Start Time</div>
+                        <div>End Time</div>
+                        <div>Reason / Description</div>
+                        <div></div> <!-- Placeholder for the remove button column -->
+                    </div>
+
+                    <!-- Note: bg-white applied to the rows to distinguish them from the main container -->
+                    <div id="exceptionsContainer" class="space-y-4 pt-1">
+                        <!-- Dynamic exception rows will be inserted here -->
+                    </div>
+
+                    <div class="mt-4 p-3 bg-yellow-50 rounded-md text-sm text-yellow-700">
+                        <span class="font-semibold">Total Excluded Time:</span>
+                        <span id="totalExcludedHours">0.00</span> Hours
+                        <!-- MODIFIED: This span now dynamically includes the automatic weekend exclusion detail -->
+                        <span id="exclusionDetail" class="text-xs italic text-yellow-600 ml-2"></span>
+                    </div>
+                </section>
+
+                <!-- CALCULATION BUTTON -->
+                <div class="pt-4">
+                    <button id="calculateBtn" class="w-full py-4 bg-indigo-600 text-white text-xl font-extrabold rounded-lg shadow-xl hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-[1.005]">
+                        Calculate Laytime Used
+                    </button>
+                </div>
+            </div>
+
+            <!-- COLUMN 3: CALCULATION SUMMARY (MOVED OUTSIDE THE INPUT CARD) -->
+            <div class="lg:col-span-1">
+                <!-- Applied the card styling here instead -->
+                <section class="sticky top-4 bg-white p-6 rounded-lg border border-indigo-300 shadow-xl space-y-4">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-4 border-b pb-2">Calculation Summary</h2>
+
+                    <!-- Individual Results - Consistent Style -->
+                    <div class="result-box p-3 bg-indigo-50 rounded-lg">
+                        <!-- AMENDED LABEL -->
+                        <p id="resultLaytimeAllowedLabel" class="text-sm text-indigo-600 font-medium">Laytime Allowed</p>
+                        <!-- AMENDED VALUE FORMAT -->
+                        <p id="resultLaytimeAllowed" class="text-2xl font-extrabold text-indigo-800">0.0000 Days</p>
+                    </div>
+
+                    <!-- NEW: Laytime Ends Result - Consistent Style -->
+                    <div class="result-box p-3 bg-indigo-50 rounded-lg">
+                        <p class="text-sm text-indigo-600 font-medium">Laytime Ends</p>
+                        <p id="resultLaytimeEnds" class="text-xl font-bold text-indigo-800 datetime-output">N/A</p>
+                    </div>
+
+                    <div class="result-box p-3 bg-indigo-50 rounded-lg">
+                         <!-- AMENDED LABEL -->
+                        <p id="resultLaytimeUsedLabel" class="text-sm text-indigo-600 font-medium">Laytime Used</p>
+                         <!-- AMENDED VALUE FORMAT -->
+                        <p id="resultLaytimeUsed" class="text-2xl font-extrabold text-indigo-800">0.0000 Days</p>
+                    </div>
+
+                    <div class="result-box p-3 rounded-lg border-2 border-dashed">
+                        <p class="text-sm font-medium">Status</p>
+                        <p id="resultStatus" class="text-2xl font-extrabold text-gray-800">PENDING</p>
+                    </div>
+
+                    <div class="result-box p-3 rounded-lg border-2 border-dashed">
+                        <p class="text-sm font-medium">Demurrage / Despatch</p>
+                        <p id="resultBalanceDays" class="text-xl font-extrabold">0.00 Days</p>
+                    </div>
+
+                    <div class="result-box p-3 rounded-lg border-2 border-dashed">
+                        <!-- AMENDED LABEL - Dynamic: Total Payable / Total Receivable -->
+                        <p id="resultAmountLabel" class="text-sm font-medium">Total Payable</p>
+                         <!-- AMENDED VALUE FORMAT: USD 0.00 -->
+                        <p id="resultAmount" class="text-2xl font-extrabold">USD 0.00</p>
+                    </div>
+
+                    <!-- Demurrage Rate for quick reference -->
+                    <div class="p-3 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-700 font-medium">Demurrage (Per Day)</p>
+                         <!-- AMENDED VALUE FORMAT: USD 0.00 -->
+                        <p id="resultDemurrageRate" class="text-xl font-bold text-yellow-800">USD 0.00</p>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Key used for saving data in localStorage
+        const LOCAL_STORAGE_KEY = 'laytime_defaults';
+
+        // Consistent input styling class (used for all dynamic inputs)
+        // UPDATED CLASS FOR DARKER, THICKER BORDER
+        const INPUT_CLASS = 'block w-full rounded-md border-2 border-gray-400 shadow-sm p-2 text-sm focus:border-indigo-600 focus:ring-indigo-600';
+
+
+        // Fields we want to save and load
+        const PERSISTENT_FIELDS = [
+            'vesselName', 'portName1', 'portName2', 'portName3',
+            'owners', 'charterers',
+            'cargoQuantity', 'loadDischRate', 'laytimeTerms', 'demurrageRate',
+            'noticeTendered', 'noticeAccepted', 'laytimeCommenced', 'cargoCompleted'
+        ];
+
+        // --- UTILITY FUNCTIONS ---
+
+        function getNumberValue(id) {
+            return parseFloat(document.getElementById(id).value) || 0;
+        }
+
+        function getStringValue(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+        }
+
+        function parseDateTime(dtString) {
+            if (!dtString || dtString.length !== 16) return null;
+            return new Date(dtString);
+        }
+
+        /**
+         * Formats a Date object into a readable string (e.g., "Oct 25 2025, 14:30")
+         * Returns 'N/A' if the date is invalid.
+         * @param {Date | null} dateObj - The date object to format.
+         * @returns {string} Formatted date string or 'N/A'.
+         */
+        function formatDateTimeOutput(dateObj) {
+            if (!dateObj || !(dateObj instanceof Date) || isNaN(dateObj)) {
+                return 'N/A';
+            }
+            return dateObj.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // Use 24-hour format
+            });
+        }
+
+        function updateLaytimeAllowedDisplay(quantity, rate) {
+            const allowedDays = rate > 0 ? quantity / rate : 0;
+            // AMENDED: Format to 4 decimals
+            document.getElementById('laytimeAllowedDays').textContent = allowedDays.toFixed(4);
+            return allowedDays;
+        }
+
+        /**
+         * Returns a descriptive string for the automated weekend exclusions.
+         * MODIFIED: Added specific text for UU terms and "once on demurrage" rule.
+         * @param {string} terms - Laytime Terms ('SHEXEIU', 'SSHEXEIU', etc.).
+         * @returns {string} Text detailing the automated exclusions.
+         */
+        function getWeekendExclusionsText(terms) {
+            switch (terms) {
+                case 'SHINC':
+                    return '(Manual entries only)';
+                case 'SHEXEIU': // Even If Used - Sunday automatically excluded
+                    return '(Includes manual entries & **Sundays** automatically excluded *before* laytime expires)';
+                case 'SHEXUU': // Unless Used - Sunday NOT automatically excluded
+                    return '(Includes manual entries; Weekends count unless manually excluded)';
+                case 'SSHEXEIU': // Even If Used - Sat & Sun automatically excluded
+                    return '(Includes manual entries & **Saturday and Sunday** automatically excluded *before* laytime expires)';
+                case 'SSHEXUU': // Unless Used - Sat & Sun NOT automatically excluded
+                    return '(Includes manual entries; Weekends count unless manually excluded)';
+                default:
+                    return '(Includes manual entries & weekend terms)';
+            }
+        }
+
+
+        /**
+         * Calculates excluded hours based on Laytime Terms for the given period.
+         * MODIFIED: Added check for 'UU' terms and stops exclusion after laytimeEnds.
+         * @param {Date} start - Laytime Commenced date.
+         * @param {Date} end - Operations Completed date.
+         * @param {string} terms - Laytime Terms ('SHEXEIU', 'SSHEXEIU', etc.).
+         * @param {Date | null} laytimeEnds - Calculated time when laytime expires.
+         * @returns {number} Total excluded minutes due to weekend/holiday terms *before* laytime expires.
+         */
+        function calculateWeekendExclusions(start, end, terms, laytimeEnds) {
+            // Check for SHINC (no auto exclusions) or if the term ends with UU (Unless Used)
+            if (!start || !end || start >= end || terms === 'SHINC' || terms.endsWith('UU')) {
+                return 0; // No automatic exclusions for SHINC or UU terms
+            }
+            // Also no auto exclusions if laytime expiration time couldn't be calculated
+            if (!laytimeEnds) return 0;
+
+            let excludedMinutes = 0;
+            // Determine which days are excluded based on the prefix AND ensure it's not UU
+            const excludeSaturday = terms.startsWith('SSHEX'); // Only true for SSHEXEIU
+            const excludeSunday = terms.includes('SHEX');    // True for SHEXEIU and SSHEXEIU
+
+            const ONE_MINUTE_MS = 60 * 1000;
+            const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+
+            let currentDate = new Date(start);
+            currentDate.setHours(0, 0, 0, 0);
+
+            // Iterate only up to the *end* of the operations OR when laytime expires, whichever is earlier for exclusion checks.
+            // The actual iteration limit should be the day *after* operationsCompleted to include the final day's check.
+             let iterationEndDate = new Date(end);
+             iterationEndDate.setHours(0, 0, 0, 0);
+             iterationEndDate = new Date(iterationEndDate.getTime() + ONE_DAY_MS);
+
+            for (let day = new Date(currentDate); day < iterationEndDate; day = new Date(day.getTime() + ONE_DAY_MS)) {
+
+                // --- ONCE ON DEMURRAGE RULE ---
+                // If the current day starts AFTER laytime has already expired, stop calculating automatic exclusions.
+                if (day.getTime() >= laytimeEnds.getTime()) {
+                    break;
+                }
+
+                // Check if this day is a weekend day to be excluded
+                const dayOfWeek = day.getDay();
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+
+                let dayIsExcluded = false;
+                if (excludeSunday && isSunday) {
+                    dayIsExcluded = true;
+                }
+                if (excludeSaturday && isSaturday) {
+                    dayIsExcluded = true;
+                }
+
+                if (dayIsExcluded) {
+                    // This day is potentially excluded. Calculate the time portion *within* the laytime allowed.
+
+                    // Start of exclusion: Max of (Laytime Commenced, Start of this Day)
+                    const periodStartMs = Math.max(start.getTime(), day.getTime());
+
+                    // End of exclusion: Min of (Operations Completed, End of this Day, Laytime Ends Time)
+                    const nextDay = new Date(day.getTime() + ONE_DAY_MS);
+                    const periodEndMs = Math.min(end.getTime(), nextDay.getTime(), laytimeEnds.getTime());
+
+                    // If the calculated overlap period is valid and positive
+                    if (periodEndMs > periodStartMs) {
+                        const durationMs = periodEndMs - periodStartMs;
+                        excludedMinutes += durationMs / ONE_MINUTE_MS;
+                    }
+                }
+            }
+
+            return excludedMinutes;
+        }
+
+
+        function calculateTotalLaytimeUsed(start, end, excludedHours) {
+            if (!start || !end || start >= end) return 0;
+
+            const elapsedMs = end.getTime() - start.getTime();
+            const totalDays = elapsedMs / (1000 * 60 * 60 * 24);
+            const excludedDays = excludedHours / 24;
+            const laytimeUsedDays = totalDays - excludedDays;
+
+            return Math.max(0, laytimeUsedDays);
+        }
+
+        /**
+         * Creates and appends a new exception row to the container.
+         * Labels are omitted to avoid repetition, using the header row for context.
+         * @param {string} start - Optional start datetime string for initialization.
+         * @param {string} end - Optional end datetime string for initialization.
+         * @param {string} reason - Optional reason string for initialization.
+         */
+        function createExceptionRow(start = '', end = '', reason = '') {
+            const container = document.getElementById('exceptionsContainer');
+
+            const row = document.createElement('div');
+            row.className = 'exception-row items-center p-3 bg-white rounded-lg border border-gray-200 transition duration-150 ease-in-out hover:shadow-md';
+
+            // --- 1. Start Date/Time Input (Grid Col 1) ---
+            const startDiv = document.createElement('div');
+            startDiv.innerHTML = `
+                <input type="datetime-local" value="${start}"
+                       class="exception-start ${INPUT_CLASS}">
+            `;
+            row.appendChild(startDiv);
+
+            // --- 2. End Date/Time Input (Grid Col 2) ---
+            const endDiv = document.createElement('div');
+            endDiv.innerHTML = `
+                <input type="datetime-local" value="${end}"
+                       class="exception-end ${INPUT_CLASS}">
+            `;
+            row.appendChild(endDiv);
+
+            // --- 3. Reason Input (Grid Col 3) ---
+            const reasonDiv = document.createElement('div');
+            reasonDiv.innerHTML = `
+                <input type="text" value="${reason}" placeholder="E.g., Rain, Waiting for Documents"
+                       class="exception-reason ${INPUT_CLASS}">
+            `;
+            row.appendChild(reasonDiv);
+
+            // --- 4. Remove Button (Grid Col 4) ---
+            const removeBtnContainer = document.createElement('div');
+            removeBtnContainer.className = 'flex items-center justify-center h-full';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.title = 'Remove Exception';
+            removeBtn.className = 'remove-exception-btn bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition h-8 w-8 flex items-center justify-center flex-shrink-0';
+            removeBtn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            `;
+
+            removeBtn.addEventListener('click', () => {
+                container.removeChild(row);
+                calculateLaytime(); // Recalculate after removal
+            });
+
+            removeBtnContainer.appendChild(removeBtn);
+            row.appendChild(removeBtnContainer);
+
+
+            container.appendChild(row);
+
+            row.querySelectorAll('input').forEach(input => {
+                // Since INPUT_CLASS already contains necessary styling, just add the listener
+                input.addEventListener('input', calculateLaytime);
+            });
+        }
+
+        // --- PORT INPUT TOGGLE LOGIC (Unchanged) ---
+
+        function updatePort1Label() {
+            const port1LabelEl = document.getElementById('portName1Label');
+            const portName2Value = getStringValue('portName2');
+            const portName3Value = getStringValue('portName3');
+
+            if (!port1LabelEl) return;
+
+            if (portName2Value.length > 0 || portName3Value.length > 0) {
+                port1LabelEl.textContent = 'Port Name 1';
+            } else {
+                port1LabelEl.textContent = 'Port Name';
+            }
+        }
+
+        function managePort3WrapperVisibility() {
+            const port3Wrapper = document.getElementById('port3Wrapper');
+            const portName2Value = getStringValue('portName2');
+
+            if (portName2Value.length > 0) {
+                port3Wrapper.classList.remove('hidden');
+            } else {
+                clearOptionalPort(3, true);
+                port3Wrapper.classList.add('hidden');
+            }
+        }
+
+        function togglePortInput(portNum, skipCalculation = false) {
+            const checkerId = `port${portNum}Active`;
+            const inputId = `portName${portNum}`;
+
+            const checkerEl = document.getElementById(checkerId);
+            const checkerContainerEl = document.getElementById(`port${portNum}Checker`);
+
+            const inputContainerEl = document.getElementById(`port${portNum}InputContainer`);
+            const inputEl = document.getElementById(inputId);
+
+            if (!checkerEl || !checkerContainerEl || !inputContainerEl || !inputEl) return;
+
+            const isChecked = checkerEl.checked;
+            const hasValue = inputEl.value.trim() !== '';
+
+            if (isChecked || hasValue) {
+                checkerContainerEl.classList.add('hidden');
+                inputContainerEl.classList.remove('hidden');
+                inputEl.disabled = false;
+
+                if (isChecked) {
+                    checkerEl.checked = false;
+                    if (!hasValue) inputEl.focus();
+                }
+            } else {
+                checkerContainerEl.classList.remove('hidden');
+                inputContainerEl.classList.add('hidden');
+                inputEl.disabled = true;
+                inputEl.value = '';
+            }
+
+            if (portNum === 2) {
+                managePort3WrapperVisibility();
+            }
+
+            updatePort1Label();
+        }
+
+        function clearOptionalPort(portNum, skipCalculation = false) {
+            const inputId = `portName${portNum}`;
+            const inputEl = document.getElementById(inputId);
+
+            if (inputEl) {
+                inputEl.value = '';
+            }
+
+            togglePortInput(portNum, skipCalculation);
+        }
+
+
+        // --- LOCAL STORAGE DATA HANDLING (Unchanged) ---
+
+        function loadDefaultDataLocal() {
+            try {
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+
+                    PERSISTENT_FIELDS.forEach(id => {
+                        if (data[id] !== undefined) {
+                            const inputEl = document.getElementById(id);
+                            if (inputEl) {
+                                inputEl.value = data[id];
+                            }
+                        }
+                    });
+
+                    togglePortInput(2, true);
+                    togglePortInput(3, true);
+
+                    const exceptionsContainer = document.getElementById('exceptionsContainer');
+                    exceptionsContainer.innerHTML = '';
+
+                    if (data.exceptions && Array.isArray(data.exceptions)) {
+                        data.exceptions.forEach(ex => {
+                            createExceptionRow(ex.start, ex.end, ex.reason);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading data from localStorage:", error);
+            }
+        }
+
+        function saveDefaultDataLocal(dataToSave) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+            } catch (error) {
+                console.error("Error saving data to localStorage:", error);
+            }
+        }
+
+        // --- CORE LAYTIME CALCULATION LOGIC (With formatting rules applied) ---
+
+        function calculateLaytime() {
+            // ... (Get inputs, save data - unchanged) ...
+             const dataToSave = {};
+
+            PERSISTENT_FIELDS.forEach(id => {
+                dataToSave[id] = getStringValue(id);
+            });
+
+            managePort3WrapperVisibility();
+            updatePort1Label();
+
+            const cargoQuantity = getNumberValue('cargoQuantity');
+            const loadDischRate = getNumberValue('loadDischRate');
+            const demurrageRate = getNumberValue('demurrageRate');
+            const laytimeTerms = getStringValue('laytimeTerms');
+
+            const exceptionsContainer = document.getElementById('exceptionsContainer');
+            const exceptionsToSave = [];
+            let totalManualExcludedMinutes = 0;
+
+            Array.from(exceptionsContainer.children).forEach(row => {
+                const startInput = row.querySelector('.exception-start');
+                const endInput = row.querySelector('.exception-end');
+                const reasonInput = row.querySelector('.exception-reason');
+
+                const startValue = startInput ? startInput.value : '';
+                const endValue = endInput ? endInput.value : '';
+                const reasonValue = reasonInput ? reasonInput.value : '';
+
+                exceptionsToSave.push({
+                    start: startValue,
+                    end: endValue,
+                    reason: reasonValue
+                });
+
+                const start = parseDateTime(startValue);
+                const end = parseDateTime(endValue);
+
+                if (start && end && start < end) {
+                    const durationMs = end.getTime() - start.getTime();
+                    totalManualExcludedMinutes += durationMs / (1000 * 60);
+                }
+            });
+
+            dataToSave.exceptions = exceptionsToSave;
+            saveDefaultDataLocal(dataToSave);
+
+            // 4. Calculate Laytime Allowed (Days) and Laytime Ends Time
+            const laytimeAllowedDays = updateLaytimeAllowedDisplay(cargoQuantity, loadDischRate); // Already formats to 4 decimals here
+            const laytimeCommenced = parseDateTime(dataToSave.laytimeCommenced);
+            let laytimeEnds = null;
+            if (laytimeCommenced && laytimeAllowedDays > 0) {
+                 const allowedMilliseconds = laytimeAllowedDays * 24 * 60 * 60 * 1000;
+                 laytimeEnds = new Date(laytimeCommenced.getTime() + allowedMilliseconds);
+            }
+
+            // 5. Calculate Weekend Exclusions
+            const operationsCompleted = parseDateTime(dataToSave.cargoCompleted);
+            let totalWeekendExcludedMinutes = 0;
+            if (laytimeCommenced && operationsCompleted) {
+                totalWeekendExcludedMinutes = calculateWeekendExclusions(
+                    laytimeCommenced,
+                    operationsCompleted,
+                    laytimeTerms,
+                    laytimeEnds
+                );
+            }
+
+            // 6. Combine Exclusions
+            const combinedExcludedMinutes = totalManualExcludedMinutes + totalWeekendExcludedMinutes;
+            const combinedExcludedHours = combinedExcludedMinutes / 60;
+
+            // 7. Update UI for Exclusions
+            document.getElementById('totalExcludedHours').textContent = combinedExcludedHours.toFixed(2);
+            const exclusionDetailEl = document.getElementById('exclusionDetail');
+            exclusionDetailEl.innerHTML = getWeekendExclusionsText(laytimeTerms);
+
+            // 8. Calculate Laytime Used (Days)
+            const laytimeUsedDays = calculateTotalLaytimeUsed(
+                laytimeCommenced,
+                operationsCompleted,
+                combinedExcludedHours
+            );
+
+            // 9. Calculate Balance
+            const balanceDays = laytimeAllowedDays - laytimeUsedDays;
+
+            // 10. Determine Status & Financials
+            let status, amountUsd, balanceText, amountLabelText;
+
+            if (laytimeCommenced === null || operationsCompleted === null || cargoQuantity === 0 || loadDischRate === 0) {
+                 status = "PENDING / MISSING DATA";
+                 amountUsd = 0;
+                 balanceText = "N/A";
+                 laytimeEnds = null;
+                 amountLabelText = "Total Payable"; // Default label
+            } else if (balanceDays < 0) {
+                status = "DEMURRAGE";
+                const daysOverdue = Math.abs(balanceDays);
+                amountUsd = daysOverdue * demurrageRate;
+                balanceText = `${daysOverdue.toFixed(4)} Days Overdue`; // Use 4 decimals for balance days
+                amountLabelText = "Total Payable";
+            } else {
+                status = "DESPATCH";
+                const despatchRate = demurrageRate / 2;
+                amountUsd = balanceDays * despatchRate;
+                balanceText = `${balanceDays.toFixed(4)} Days Saved`; // Use 4 decimals for balance days
+                amountLabelText = "Total Receivable"; // AMENDED LABEL FOR DESPATCH
+            }
+
+            // 11. Update Results Display - APPLYING FORMATTING CHANGES
+
+            // Demurrage Rate - Always 2 decimals for USD
+            document.getElementById('resultDemurrageRate').textContent = `USD ${demurrageRate.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Laytime Allowed - 4 decimals + " Days" (Label already shortened in HTML)
+            document.getElementById('resultLaytimeAllowed').textContent = `${laytimeAllowedDays.toFixed(4)} Days`;
+
+            // Laytime Ends - Unchanged format
+            document.getElementById('resultLaytimeEnds').textContent = formatDateTimeOutput(laytimeEnds);
+
+            // Laytime Used - 4 decimals + " Days" (Label already shortened in HTML)
+            document.getElementById('resultLaytimeUsed').textContent = `${laytimeUsedDays.toFixed(4)} Days`;
+
+            // Balance Days - Already formatted with 4 decimals above
+            document.getElementById('resultBalanceDays').textContent = balanceText;
+
+            // Amount Label - Dynamic based on status (Payable/Receivable)
+            document.getElementById('resultAmountLabel').textContent = amountLabelText;
+
+            // Amount - Always 2 decimals for USD
+            document.getElementById('resultAmount').textContent = `USD ${amountUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Status Update (coloring remains the same)
+            const statusEl = document.getElementById('resultStatus');
+            statusEl.textContent = status;
+            const statusBox = statusEl.closest('.result-box');
+            statusBox.className = 'result-box p-3 rounded-lg border-2 border-dashed transition duration-300';
+            statusEl.className = 'text-2xl font-extrabold';
+
+            if (status === "DEMURRAGE") {
+                statusBox.classList.add('bg-red-100', 'border-red-500');
+                statusEl.classList.add('text-red-700');
+            } else if (status === "DESPATCH") {
+                statusBox.classList.add('bg-green-100', 'border-green-500');
+                statusEl.classList.add('text-green-700');
+            } else {
+                statusBox.classList.add('bg-gray-100', 'border-gray-400');
+                statusEl.classList.add('text-gray-700');
+            }
+        }
+
+        // --- EVENT LISTENERS AND INITIALIZATION (Unchanged) ---
+
+        function setupEventListeners() {
+            const calculateBtn = document.getElementById('calculateBtn');
+            calculateBtn.addEventListener('click', calculateLaytime);
+
+            const liveUpdate = () => {
+                const q = getNumberValue('cargoQuantity');
+                const r = getNumberValue('loadDischRate');
+                updateLaytimeAllowedDisplay(q, r);
+            };
+
+            document.getElementById('cargoQuantity').addEventListener('input', liveUpdate);
+            document.getElementById('loadDischRate').addEventListener('input', liveUpdate);
+
+            // Now laytimeTerms also triggers full calculation
+            document.getElementById('laytimeTerms').addEventListener('input', calculateLaytime);
+
+            const addExceptionBtn = document.getElementById('addExceptionBtn');
+            addExceptionBtn.addEventListener('click', () => {
+                createExceptionRow();
+                calculateLaytime();
+            });
+
+            // Listeners for Port Checkboxes
+            document.getElementById('port2Active').addEventListener('change', () => {
+                togglePortInput(2, true);
+                calculateLaytime();
+            });
+            document.getElementById('port3Active').addEventListener('change', () => {
+                togglePortInput(3, true);
+                calculateLaytime();
+            });
+
+            // Listeners for Port Inputs
+            document.getElementById('portName2').addEventListener('blur', () => {
+                if (getStringValue('portName2') === '') {
+                    clearOptionalPort(2);
+                }
+            });
+            document.getElementById('portName2').addEventListener('input', () => {
+                managePort3WrapperVisibility();
+                updatePort1Label();
+                calculateLaytime();
+            });
+
+            document.getElementById('portName3').addEventListener('blur', () => {
+                if (getStringValue('portName3') === '') {
+                    clearOptionalPort(3);
+                }
+            });
+             document.getElementById('portName3').addEventListener('input', () => {
+                updatePort1Label();
+                calculateLaytime();
+            });
+
+            // Listeners for the new Clear Buttons
+            document.getElementById('clearPort2Btn').addEventListener('click', () => {
+                clearOptionalPort(2);
+                calculateLaytime();
+            });
+            document.getElementById('clearPort3Btn').addEventListener('click', () => {
+                clearOptionalPort(3);
+                calculateLaytime();
+            });
+
+
+            // Recalculate whenever any persistent input changes (excluding Port 2/3 which have specific listeners)
+            const nonPortFields = PERSISTENT_FIELDS.filter(id => !id.startsWith('portName'));
+            nonPortFields.forEach(id => {
+                 const el = document.getElementById(id);
+                 if (el) el.addEventListener('input', calculateLaytime);
+            });
+            document.getElementById('portName1').addEventListener('input', calculateLaytime);
+
+            liveUpdate();
+        }
+
+        // Main entry point
+        window.onload = function() {
+            setupEventListeners();
+
+            // 1. Load data from localStorage and recreate dynamic elements/states
+            loadDefaultDataLocal();
+
+            // 2. Perform final calculation with fully loaded data
+            calculateLaytime();
+        };
+
+    </script>
+</body>
+</html>
