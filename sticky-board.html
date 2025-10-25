@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Local Sticky Board</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Matching light blue-gray for clean look */
+            min-height: 100vh;
+            overflow: hidden; 
+            cursor: pointer; /* Indicates where the user can click to create a note */
+        }
+        .note {
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+            min-width: 220px; /* Increased min width for toolbar */
+            min-height: 200px;
+            padding: 5px; /* Reduced main padding to make room for toolbar */
+            position: absolute; 
+            cursor: grab;
+            user-select: none;
+            transition: box-shadow 0.1s;
+            border-radius: 0.5rem; /* rounded-lg */
+            display: flex;
+            flex-direction: column; /* Stacks toolbar/content vertically */
+        }
+        .note:active {
+            box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.4);
+            transform: rotate(1deg); 
+            cursor: grabbing;
+        }
+        .note-content-area {
+            flex-grow: 1; 
+            /* MODIFIED: Increased top padding to create a dedicated drag zone */
+            padding: 15px 5px 5px 5px; 
+            display: flex;
+            flex-direction: column;
+        }
+        .note textarea {
+            flex-grow: 1; /* Make the textarea fill the available space */
+            resize: none;
+            border: none;
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            outline: none;
+            color: #374151; /* Tailwind gray-700 */
+            cursor: text;
+            line-height: 1.4;
+            user-select: text !important; 
+        }
+        .note-container {
+            position: relative;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent */
+            color: #ef4444; 
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.15s, background-color 0.15s;
+            z-index: 10;
+        }
+        .delete-btn:hover {
+            opacity: 1;
+            background-color: #f87171; 
+            color: white;
+        }
+        .header {
+            z-index: 50; 
+            position: sticky;
+            top: 0;
+        }
+
+        /* Resizing Handle Styles */
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 15px;
+            height: 15px;
+            cursor: nwse-resize;
+            z-index: 20;
+            /* Triangle shape using border trick */
+            border-bottom: 15px solid rgba(0, 0, 0, 0.15);
+            border-left: 15px solid transparent;
+            border-radius: 0 0 0.5rem 0;
+            opacity: 0.8;
+            transition: opacity 0.15s;
+        }
+        .resize-handle:hover {
+            opacity: 1;
+        }
+
+        /* Toolbar Styling */
+        .toolbar {
+            /* Now at the bottom, so border-top is used for separation */
+            border-top: 1px solid rgba(209, 213, 219, 0.5); /* border-gray-300/50 */
+            padding-top: 5px;
+            padding-bottom: 2px;
+            margin-top: 5px; /* Adds space above the toolbar */
+        }
+        .toolbar-btn {
+            padding: 2px 5px;
+            margin: 0 2px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+        .toolbar-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .toolbar-btn.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+        }
+        .color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.1s;
+        }
+        .color-dot.active {
+            border-color: #374151; /* Dark gray border when active */
+        }
+    </style>
+</head>
+<body id="stickyBoard" class="p-0">
+
+    <!-- Header and Info Box - Layout updated to match the centered design -->
+    <header class="header bg-transparent py-6 px-6 mb-4 text-center">
+        <!-- Title Change -->
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Your Local Sticky Board</h1>
+        <!-- Instructions Updated (removed ** from markup) -->
+        <p class="text-lg text-gray-600 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Click the background to create a note. Drag the top margin of the note body to move, and the corner to resize.
+        </p>
+    </header>
+
+    <!-- Main Note Container -->
+    <div id="notesContainer" class="note-container w-full h-full absolute top-0 left-0">
+        <!-- Sticky notes will be appended here -->
+    </div>
+
+    <script>
+        // Global State & Constants
+        let highestZIndex = 1;
+        let isDragging = false;
+        let isResizing = false;
+        let dragTimer = 0; 
+        
+        // In-memory store: {id: {content, x, y, z, width, height, color, fontSize, fontWeight, fontStyle}}
+        let notes = {}; 
+        
+        const MIN_SIZE = 220; 
+
+        const COLORS = [
+            { name: 'yellow', class: 'bg-yellow-200' }, // #fef08a
+            { name: 'blue', class: 'bg-blue-200' },    // #bfdbfe
+            { name: 'green', class: 'bg-green-200' },   // #d9f99d
+            { name: 'pink', class: 'bg-pink-200' }     // #fecdd3
+        ];
+        
+        const FONT_SIZES = [
+            { label: 'S', value: 'sm', class: 'text-sm' },
+            { label: 'M', value: 'md', class: 'text-base' },
+            { label: 'L', value: 'lg', class: 'text-lg' }
+        ];
+
+        const DEFAULT_NOTE_PROPS = {
+            content: '',
+            x: 50,
+            y: 100,
+            z: 1,
+            width: MIN_SIZE,
+            height: MIN_SIZE,
+            color: 'yellow',
+            fontSize: 'md', // Default to medium/base size
+            fontWeight: 'normal',
+            fontStyle: 'normal'
+        };
+
+
+        /**
+         * Generates a unique ID.
+         */
+        function generateUniqueId() {
+            return 'note-' + crypto.randomUUID();
+        }
+
+        // --- LOCAL STORAGE FUNCTIONS ---
+        
+        /**
+         * Saves the current in-memory notes object to localStorage.
+         */
+        function saveNotes() {
+            localStorage.setItem('stickyNotesData', JSON.stringify(notes));
+        }
+
+        /**
+         * Loads notes from localStorage.
+         */
+        function loadNotes() {
+            const stored = localStorage.getItem('stickyNotesData');
+            if (stored) {
+                try {
+                    notes = JSON.parse(stored);
+                    
+                    Object.values(notes).forEach(note => {
+                        // Ensure all new properties exist on old notes
+                        Object.keys(DEFAULT_NOTE_PROPS).forEach(key => {
+                            if (note[key] === undefined) {
+                                note[key] = DEFAULT_NOTE_PROPS[key];
+                            }
+                        });
+
+                        if (note.z > highestZIndex) {
+                            highestZIndex = note.z;
+                        }
+                    });
+                } catch (e) {
+                    console.error("Error parsing stored notes from localStorage. Starting with empty board.", e);
+                    notes = {};
+                }
+            }
+            renderNotes();
+            document.getElementById('stickyBoard').addEventListener('click', handleBoardClick);
+        }
+        
+        /**
+         * Renders all notes from the 'notes' object to the DOM.
+         */
+        function renderNotes() {
+            const container = document.getElementById('notesContainer');
+            container.innerHTML = ''; 
+            
+            // Sort by Z-index before rendering to ensure correct stacking order
+            const sortedNotes = Object.entries(notes).sort(([, a], [, b]) => a.z - b.z);
+            
+            sortedNotes.forEach(([id, data]) => {
+                createNoteElement(id, data.content, data.x, data.y, data.z, data.width, data.height);
+            });
+        }
+
+        // --- LOCAL CRUD OPERATIONS ---
+        
+        /**
+         * Updates the in-memory note object and saves to localStorage.
+         */
+        function saveNote(id, data) {
+            if (!notes[id]) {
+                notes[id] = { ...DEFAULT_NOTE_PROPS, z: highestZIndex };
+            }
+            notes[id] = { ...notes[id], ...data };
+            saveNotes();
+        }
+
+        /**
+         * Deletes a sticky note from the in-memory object and localStorage.
+         */
+        function deleteNote(id) {
+            delete notes[id];
+            
+            const noteEl = document.getElementById(id);
+            if (noteEl) {
+                noteEl.remove();
+            }
+            
+            saveNotes();
+        }
+
+
+        // --- DOM MANIPULATION & INTERACTION ---
+
+        /**
+         * Applies styling based on the note data object.
+         */
+        function applyNoteStyles(noteEl, data) {
+            const currentNote = notes[noteEl.id];
+            if (!currentNote) return;
+
+            // 1. Color
+            const colorClass = COLORS.find(c => c.name === data.color)?.class || COLORS[0].class;
+            // Remove all existing color classes and apply the new one
+            noteEl.classList.remove(...COLORS.map(c => c.class));
+            noteEl.classList.add(colorClass);
+
+            // 2. Font Styles (Applied to textarea)
+            const textarea = noteEl.querySelector('textarea');
+            if (textarea) {
+                // Clear existing font style classes (Bold, Italic, and all Sizes)
+                textarea.classList.remove('font-bold', 'italic', 'font-normal', 'not-italic');
+                textarea.classList.remove(...FONT_SIZES.map(s => s.class));
+
+                // Apply new styles
+                textarea.classList.add(data.fontWeight === 'bold' ? 'font-bold' : 'font-normal');
+                textarea.classList.add(data.fontStyle === 'italic' ? 'italic' : 'not-italic');
+                
+                // Find and apply the correct font size class
+                const fontSizeClass = FONT_SIZES.find(s => s.value === data.fontSize)?.class || FONT_SIZES[1].class;
+                textarea.classList.add(fontSizeClass);
+            }
+
+            // 3. Toolbar Active States (Applied to controls)
+            const toolbar = noteEl.querySelector('.toolbar');
+            if (toolbar) {
+                // Color dots
+                toolbar.querySelectorAll('.color-dot').forEach(dot => {
+                    dot.classList.remove('active');
+                    if (dot.getAttribute('data-color') === data.color) {
+                        dot.classList.add('active');
+                    }
+                });
+
+                // Font Size buttons
+                toolbar.querySelectorAll('.size-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-size') === data.fontSize) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                // Bold/Italic buttons
+                toolbar.querySelector('[data-style="bold"]').classList.toggle('active', data.fontWeight === 'bold');
+                toolbar.querySelector('[data-style="italic"]').classList.toggle('active', data.fontStyle === 'italic');
+            }
+        }
+
+        /**
+         * Creates the configuration toolbar for a sticky note.
+         */
+        function createToolbar(noteId) {
+            // Updated class: Removed border-b and mb-1, added border-t and mt-1 (CSS handles the border now)
+            const toolbar = document.createElement('div');
+            toolbar.className = 'toolbar flex items-center justify-between p-1 mt-1'; 
+
+            // --- 1. Color Selection ---
+            const colorGroup = document.createElement('div');
+            colorGroup.className = 'flex space-x-1';
+            
+            COLORS.forEach(color => {
+                const dot = document.createElement('div');
+                dot.className = `color-dot ${color.class}`;
+                dot.setAttribute('data-color', color.name);
+                dot.title = `Change color to ${color.name}`;
+
+                dot.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    saveNote(noteId, { color: color.name });
+                    applyNoteStyles(document.getElementById(noteId), notes[noteId]);
+                });
+                colorGroup.appendChild(dot);
+            });
+            toolbar.appendChild(colorGroup);
+
+
+            // --- 2. Font Style and Size Controls ---
+            const styleGroup = document.createElement('div');
+            styleGroup.className = 'flex items-center space-x-1 text-xs text-gray-700';
+
+            // Bold Button
+            const boldBtn = document.createElement('span');
+            boldBtn.className = 'toolbar-btn font-extrabold select-none';
+            boldBtn.textContent = 'B';
+            boldBtn.setAttribute('data-style', 'bold');
+            boldBtn.title = 'Toggle Bold';
+
+            boldBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const currentWeight = notes[noteId].fontWeight;
+                const newWeight = currentWeight === 'bold' ? 'normal' : 'bold';
+                saveNote(noteId, { fontWeight: newWeight });
+                applyNoteStyles(document.getElementById(noteId), notes[noteId]);
+            });
+
+            // Italic Button
+            const italicBtn = document.createElement('span');
+            italicBtn.className = 'toolbar-btn italic select-none';
+            italicBtn.textContent = 'I';
+            italicBtn.setAttribute('data-style', 'italic');
+            italicBtn.title = 'Toggle Italic';
+            
+            italicBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const currentStyle = notes[noteId].fontStyle;
+                const newStyle = currentStyle === 'italic' ? 'normal' : 'italic';
+                saveNote(noteId, { fontStyle: newStyle });
+                applyNoteStyles(document.getElementById(noteId), notes[noteId]);
+            });
+            
+            styleGroup.appendChild(boldBtn);
+            styleGroup.appendChild(italicBtn);
+            
+            // Font Size Buttons
+            FONT_SIZES.forEach(size => {
+                const sizeBtn = document.createElement('span');
+                sizeBtn.className = `toolbar-btn size-btn select-none`; // Remove initial size class here, let applyNoteStyles handle it
+                sizeBtn.textContent = size.label;
+                sizeBtn.setAttribute('data-size', size.value);
+                sizeBtn.title = `Font Size ${size.label}`;
+
+                sizeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    saveNote(noteId, { fontSize: size.value });
+                    applyNoteStyles(document.getElementById(noteId), notes[noteId]);
+                });
+                styleGroup.appendChild(sizeBtn);
+            });
+
+            toolbar.appendChild(styleGroup);
+
+            return toolbar;
+        }
+
+
+        /**
+         * Creates a draggable and resizable sticky note element.
+         */
+        function createNoteElement(id, content, x, y, z, width, height) {
+            const container = document.getElementById('notesContainer');
+            const data = notes[id];
+
+            const note = document.createElement('div');
+            note.id = id; 
+            note.className = 'note rounded-lg shadow-lg hover:shadow-xl transition-shadow';
+            note.setAttribute('data-id', id);
+            note.style.left = `${x}px`;
+            note.style.top = `${y}px`;
+            note.style.zIndex = z;
+            note.style.width = `${width}px`;
+            note.style.height = `${height}px`;
+
+            highestZIndex = Math.max(highestZIndex, z);
+
+            // 1. Content Area (must be added first for flex-direction: column)
+            const contentArea = document.createElement('div');
+            contentArea.className = 'note-content-area';
+            note.appendChild(contentArea);
+            
+            // 2. Textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = content;
+            textarea.placeholder = 'Write your thoughts...';
+            textarea.maxLength = 1000; 
+            contentArea.appendChild(textarea);
+            
+            // 3. Toolbar (now at the bottom)
+            const toolbar = createToolbar(id);
+            note.appendChild(toolbar); 
+
+
+            // Textarea input listener (saves content on change)
+            textarea.addEventListener('input', (e) => {
+                e.stopPropagation();
+                clearTimeout(textarea.saveTimeout);
+                textarea.saveTimeout = setTimeout(() => {
+                    saveNote(id, { content: textarea.value });
+                }, 500);
+            });
+
+            // Focus listener (brings note to front)
+            textarea.addEventListener('focus', (e) => {
+                e.stopPropagation(); 
+                bringToFront(note);
+            });
+
+
+            // 4. Delete Button
+            const deleteBtn = document.createElement('div');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = 'X';
+            deleteBtn.title = 'Delete Note';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                deleteNote(id);
+            });
+            note.appendChild(deleteBtn);
+            
+            // 5. Resizing Handle
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'resize-handle';
+            
+            // --- RESIZING LOGIC ---
+            let initialMouseX, initialMouseY, initialWidth, initialHeight;
+            let currentWidth, currentHeight;
+
+            const resizeStart = (e) => {
+                e.stopPropagation();
+                e.preventDefault(); 
+
+                isResizing = true;
+                bringToFront(note);
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                initialMouseX = clientX;
+                initialMouseY = clientY;
+                
+                initialWidth = note.offsetWidth;
+                initialHeight = note.offsetHeight;
+            }
+
+            const resize = (e) => {
+                if (!isResizing) return;
+                e.preventDefault(); 
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                const dx = clientX - initialMouseX;
+                const dy = clientY - initialMouseY;
+
+                // Apply difference, ensuring minimum size
+                currentWidth = Math.max(MIN_SIZE, initialWidth + dx);
+                currentHeight = Math.max(MIN_SIZE, initialHeight + dy);
+
+                note.style.width = `${currentWidth}px`;
+                note.style.height = `${currentHeight}px`;
+            }
+
+            const resizeEnd = () => {
+                if (!isResizing) return;
+
+                isResizing = false;
+                
+                if (currentWidth && currentHeight) {
+                    saveNote(id, { width: currentWidth, height: currentHeight });
+                }
+            }
+            
+            // Attach mouse events for resizing
+            resizeHandle.addEventListener('mousedown', resizeStart);
+            document.addEventListener('mouseup', resizeEnd);
+            document.addEventListener('mousemove', resize);
+
+            // Attach touch events for resizing
+            resizeHandle.addEventListener('touchstart', resizeStart);
+            document.addEventListener('touchend', resizeEnd);
+            document.addEventListener('touchmove', resize);
+            note.appendChild(resizeHandle);
+            
+            // --- DRAGGING LOGIC ---
+
+            let isLocalDragging = false;
+            let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0, noteMoved = false;
+
+            const dragStart = (e) => {
+                // If currently resizing, don't start dragging
+                if (isResizing) return; 
+                e.stopPropagation();
+
+                // If the target is the textarea, toolbar, delete button, or resize handle, prevent drag logic
+                if (e.target.closest('.toolbar') || e.target.tagName === 'TEXTAREA' || e.target.classList.contains('delete-btn') || e.target.classList.contains('resize-handle')) {
+                    return;
+                }
+
+                e.preventDefault(); 
+                
+                isLocalDragging = true;
+                noteMoved = false;
+                isDragging = true;
+                clearTimeout(dragTimer);
+
+                bringToFront(note);
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                initialX = clientX - xOffset;
+                initialY = clientY - yOffset;
+            }
+
+            const drag = (e) => {
+                if (!isLocalDragging) return;
+                e.preventDefault(); 
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                currentX = clientX - initialX;
+                currentY = clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                note.style.left = `${currentX}px`;
+                note.style.top = `${currentY}px`;
+                noteMoved = true;
+            }
+
+            const dragEnd = () => {
+                if (!isLocalDragging) return;
+
+                isLocalDragging = false;
+                dragTimer = setTimeout(() => { isDragging = false; }, 50);
+
+                if (noteMoved) {
+                    // Save new position
+                    saveNote(id, { x: currentX, y: currentY });
+                }
+
+                initialX = currentX;
+                initialY = currentY;
+            }
+
+            // Attach drag events to the main note body
+            note.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+            note.addEventListener('touchstart', dragStart);
+            document.addEventListener('touchend', dragEnd);
+            note.addEventListener('touchmove', drag);
+
+            // Initial positioning of the offsets
+            const rect = note.getBoundingClientRect();
+            xOffset = rect.left;
+            yOffset = rect.top;
+
+            container.appendChild(note);
+
+            // Apply styles based on loaded data
+            applyNoteStyles(note, data);
+
+            return note;
+        }
+
+        /**
+         * Increases the Z-index of the given note element and saves it locally.
+         */
+        function bringToFront(noteEl) {
+            highestZIndex++;
+            noteEl.style.zIndex = highestZIndex;
+            const noteId = noteEl.getAttribute('data-id');
+            saveNote(noteId, { z: highestZIndex });
+        }
+
+
+        /**
+         * Handles the click on the board background to create a new note.
+         */
+        function handleBoardClick(e) {
+            // Do not create a new note if currently dragging or resizing or clicking on the header
+            if (isDragging || isResizing || e.target.closest('header')) {
+                return;
+            }
+            
+            // Check if click originated from background
+            if (e.target.closest('.note')) {
+                return;
+            }
+
+            const x = e.clientX;
+            const y = e.clientY;
+
+            highestZIndex++;
+            const newId = generateUniqueId(); 
+
+            // Create new note data object using defaults and new position/z-index
+            const newNoteData = {
+                ...DEFAULT_NOTE_PROPS,
+                x: x - (MIN_SIZE / 2), // Center the note roughly on the click point
+                y: y,
+                z: highestZIndex,
+            };
+
+            // Save to in-memory state and localStorage
+            notes[newId] = newNoteData;
+            saveNotes();
+            
+            // Create and add to DOM immediately
+            createNoteElement(newId, newNoteData.content, newNoteData.x, newNoteData.y, newNoteData.z, newNoteData.width, newNoteData.height);
+        }
+        
+        // Start the application by loading existing notes from local storage
+        window.onload = loadNotes;
+    </script>
+</body>
+</html>
