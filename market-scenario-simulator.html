@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Market Scenario Simulator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for Inter font and custom colors (Blue theme) -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#4f46e5', // Indigo 600 (Button Color)
+                        'secondary-blue': '#6366f1', // Indigo 500 (Accent Color)
+                        'light-bg': '#f3f4f6', // Light Gray Background
+                        'text-dark': '#1f2937', // Gray 800
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ensure the body uses the requested light gray background */
+        body {
+            background-color: #f3f4f6;
+            color: #1f2937; /* Dark text for contrast */
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        /* Custom styling for the analysis text block */
+        .prose h5 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700; /* font-bold */
+            color: #4f46e5; /* primary-blue color */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        /* Adjusted paragraph margin for cleaner breaks */
+        .prose p {
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        /* Custom styling for the table element */
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background-color: #ffffff; /* White background for the table */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .prose th, .prose td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* Gray 200 */
+        }
+        .prose th {
+            background-color: #f9fafb; /* Gray 50 for headers */
+            font-weight: 700;
+            color: #4f46e5; /* primary-blue */
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        /* Ensure the strong tag inside the table works */
+        .prose table strong {
+            font-weight: 800;
+            color: #1f2937;
+        }
+    </style>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="flex justify-center pt-12 pb-24">
+
+    <!-- Market Scenario Analyzer Section: Width increased to max-w-6xl -->
+    <section id="llm-tool" class="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-5xl font-extrabold text-center mb-4 text-text-dark">
+            ✨ Live Market Scenario Simulator
+        </h2>
+        <p class="text-xl text-center text-gray-600 mb-10 max-w-3xl mx-auto">
+            Pose any market scenario or "What If" question and our AI will synthesize data and deliver a comprehensive, grounded impact analysis.
+        </p>
+
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-200">
+            <form id="scenario-form" class="space-y-4">
+                <textarea id="scenario-prompt" placeholder="Example: What is the price impact of a severe drought in the US Midwest next summer on corn and soybean futures?" rows="4" class="w-full p-4 border border-gray-300 rounded-lg bg-white text-text-dark focus:ring-secondary-blue focus:border-secondary-blue resize-none"></textarea>
+                
+                <!-- ANALYZE SCENARIO Button: Now w-1/2 and centered on medium screens and up -->
+                <div class="flex justify-center">
+                    <button type="submit" id="submit-btn" class="w-full md:w-1/2 bg-primary-blue hover:bg-secondary-blue text-white font-bold text-lg py-3 rounded-lg transition duration-300 shadow-lg flex items-center justify-center">
+                        <span id="btn-text">ANALYZE SCENARIO ✨</span>
+                        <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Results Display -->
+            <div id="results-container" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h4 class="text-2xl font-bold mb-4 text-primary-blue">Scenario Analysis Report:</h4>
+                <div id="analysis-text" class="prose max-w-none text-gray-700">
+                    <!-- Analysis content will be injected here -->
+                </div>
+                <div id="sources-display" class="mt-6 text-sm text-gray-500 border-t border-gray-200 pt-4">
+                    <!-- Sources will be injected here -->
+                </div>
+                
+                <!-- New Copy Button (Wrapped for centering and width) -->
+                <div class="flex justify-center">
+                    <button type="button" id="copy-btn" onclick="copyReport()" class="mt-6 w-full md:w-1/2 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                        <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Error Message: Added span with ID for better error reporting -->
+            <div id="error-message" class="mt-4 text-red-600 font-semibold hidden">
+                <span id="error-text">An error occurred. Please try a different query or check the console for details.</span>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmission);
+
+        // 🚨 IMPORTANT: When deploying this app, you MUST replace the empty string below 
+        // with your actual Gemini API Key (e.g., 'AIzaSy...'). 
+        // Leaving it blank will cause authentication errors outside this environment.
+        const apiKey = "AIzaSyA_U7dpb67Vbh5uqY6D0iPg06h9pBoq44Y"; // <-- PASTE YOUR GEMINI API KEY HERE FOR DEPLOYMENT!
+        const model = "gemini-2.5-flash-preview-09-2025";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        const resultsContainer = document.getElementById('results-container');
+        const analysisText = document.getElementById('analysis-text');
+        const sourcesDisplay = document.getElementById('sources-display');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+
+        /**
+         * Copies the user's prompt and the generated analysis report to the clipboard.
+         */
+        function copyReport() {
+            const promptText = document.getElementById('scenario-prompt').value.trim();
+            const reportContent = document.getElementById('analysis-text').innerText;
+            const sourcesText = document.getElementById('sources-display').innerText;
+            const copyButtonText = document.getElementById('copy-btn-text');
+
+            if (!reportContent) return;
+
+            // Construct the comprehensive text to copy
+            const fullReport = [
+                "--- BullBearJapan, Inc. Scenario Analysis Report ---",
+                `QUESTION: ${promptText}`,
+                "\n--- ANALYSIS ---",
+                reportContent,
+                `\n${sourcesText}`,
+                "-------------------------------------------------------"
+            ].join('\n');
+
+            // Use document.execCommand('copy') for guaranteed compatibility
+            try {
+                // 1. Create a temporary textarea element
+                const textarea = document.createElement('textarea');
+                textarea.value = fullReport;
+                // 2. Make it invisible and append it to the body
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = 0;
+                document.body.appendChild(textarea);
+                
+                // 3. Select the text and execute copy command
+                textarea.select();
+                document.execCommand('copy');
+                
+                // 4. Remove the temporary element
+                document.body.removeChild(textarea);
+
+                // 5. Provide visual feedback
+                copyButtonText.textContent = '✅ Copied to Clipboard!';
+                setTimeout(() => {
+                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
+                }, 2000);
+
+            } catch (err) {
+                console.error('Copy failed:', err);
+                copyButtonText.textContent = '❌ Copy Failed!';
+                setTimeout(() => {
+                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
+                }, 3000);
+            }
+        }
+
+        /**
+         * Converts basic Markdown (headings, bold, tables, lists, and symbols) to HTML.
+         * @param {string} markdownText - The text to convert.
+         * @returns {string} The HTML string.
+         */
+        function markdownToHtml(markdownText) {
+            // 1. Convert **bold** to <strong> and remove Windows carriage returns
+            let html = markdownText.replace(/\r/g, '');
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+
+            // 2. Replace common directional/impact symbols with Unicode Emojis
+            html = html.replace(/\\downarrow/g, '↓');      // LaTeX Down Arrow
+            html = html.replace(/\\uparrow/g, '↑');        // LaTeX Up Arrow
+            html = html.replace(/\\leftrightarrow/g, '↔');  // LaTeX Left-Right Arrow
+            // Also handle common text/symbol usage
+            html = html.replace(/\\up/g, '↑'); 
+            html = html.replace(/\\down/g, '↓'); 
+            html = html.replace(/\\neutral/g, '↔'); 
+
+            const lines = html.split('\n');
+            let inTable = false;
+            let inList = false;
+            let outputHtml = '';
+
+            // Utility to close open tags
+            const closeTags = (currentLineIsList, currentLineIsTable) => {
+                if (inTable && !currentLineIsTable) {
+                    outputHtml += '</tbody></table></div>';
+                    inTable = false;
+                }
+                if (inList && !currentLineIsList) {
+                    outputHtml += '</ul>';
+                    inList = false;
+                }
+            };
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                let isTableLine = line.startsWith('|');
+                let isListLine = line.startsWith('* ') || line.startsWith('- ');
+                let isHeading = line.startsWith('##### ');
+                let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
+
+                // Handle closing any open blocks first if the new line breaks the block type
+                closeTags(isListLine, isTableLine);
+
+                if (isHeading) {
+                    outputHtml += line.replace(/##### (.+)/g, '<h5>$1</h5>');
+                } else if (isTableLine) {
+                    if (isSeparator) {
+                        continue; // Skip the separator line
+                    }
+
+                    // Start of a table (header or row)
+                    if (!inTable) {
+                        inTable = true;
+                        outputHtml += '<div class="overflow-x-auto"><table class="min-w-full">';
+
+                        // The current line is the header row
+                        const headerCells = line.split('|').filter(c => c.trim() !== '');
+                        outputHtml += '<thead><tr>' + headerCells.map(cell => `<th>${cell.trim()}</th>`).join('') + '</tr></thead><tbody>';
+                    } else {
+                        // Table row
+                        const rowCells = line.split('|').filter(c => c.trim() !== '');
+                        outputHtml += '<tr>' + rowCells.map(cell => `<td>${cell.trim()}</td>`).join('') + '</tr>';
+                    }
+                } else if (isListLine) {
+                    if (!inList) {
+                        inList = true;
+                        // Add Tailwind classes for disc style and margin for good spacing
+                        outputHtml += '<ul class="list-disc ml-6 space-y-1 my-4">';
+                    }
+                    // Remove the list marker (e.g., "* " or "- ") and wrap in <li>
+                    const content = line.substring(line.indexOf(' ') + 1).trim();
+                    outputHtml += `<li>${content}</li>`;
+
+                } else if (line) {
+                    // This is a paragraph line
+                    // Wrap in <p> tag for block spacing (p class handles the requested line break)
+                    outputHtml += `<p>${line}</p>`;
+                }
+                // Ignore empty lines, unless they are closing a block
+            }
+
+            // Close any remaining open tags at the end of the content
+            closeTags(false, false);
+
+            return outputHtml;
+        }
+
+
+        /**
+         * Generic function to handle the fetch request with exponential backoff.
+         * @param {object} payload - The request body payload.
+         * @param {number} retries - Number of retry attempts.
+         */
+        async function fetchWithRetry(payload, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        // Rate limit exceeded, prepare to retry
+                        if (i < retries - 1) {
+                            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s, ...
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`API request failed with status: ${response.status}`);
+                    }
+                    return response.json();
+
+                } catch (error) {
+                    console.error("Fetch attempt failed:", error);
+                    if (i === retries - 1) {
+                        throw new Error("Failed to connect to the Gemini API after multiple retries.");
+                    }
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        async function handleScenarioSubmission(e) {
+            e.preventDefault();
+            
+            const userQuery = document.getElementById('scenario-prompt').value.trim();
+            if (!userQuery) return;
+
+            // 1. Reset UI and show loading state
+            resultsContainer.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            // Reset error message text
+            errorText.textContent = "An error occurred. Please try a different query or check the console for details.";
+
+            analysisText.innerHTML = '';
+            sourcesDisplay.innerHTML = '';
+            btnText.textContent = 'ANALYZING...';
+            loadingSpinner.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                // Define the LLM's role and expected output format
+                const systemPrompt = `You are a Senior Commodity Analyst for BullBearJapan, Inc.. Your role is to provide a concise, data-grounded analysis of market scenarios.
+
+                Structure your response clearly using Markdown headings (starting with #####) for the following sections:
+                1. Impact Summary (Supply, Demand, and Net Effect - use a Markdown table)
+                2. Affected Key Price Drivers (Reference concepts like Freight, Exchange Rates, COT, etc.)
+                3. Risk Mitigation Strategy (Provide a high-level suggestion)
+                
+                The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }], // Enable Google Search grounding
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                const result = await fetchWithRetry(payload);
+
+                // 2. Process Response
+                const candidate = result.candidates?.[0];
+                let generatedText = "Analysis not available.";
+                let sources = [];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    generatedText = candidate.content.parts[0].text;
+
+                    // Extract grounding sources
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title,
+                            }))
+                            .filter(source => source.uri && source.title);
+                    }
+                } else {
+                     throw new Error("Invalid response structure received from API.");
+                }
+
+
+                // 3. Update Results UI
+                const formattedHtml = markdownToHtml(generatedText);
+                analysisText.innerHTML = formattedHtml;
+                
+                if (sources.length > 0) {
+                    sourcesDisplay.innerHTML = '<p class="font-bold mb-2">Sources:</p>';
+                    sources.forEach((source, index) => {
+                        sourcesDisplay.innerHTML += `<p class="truncate"><a href="${source.uri}" target="_blank" class="text-secondary-blue hover:text-primary-blue transition duration-150">${index + 1}. ${source.title}</a></p>`;
+                    });
+                } else {
+                    sourcesDisplay.innerHTML = '<p class="text-gray-500">No external sources were used for this conceptual scenario.</p>';
+                }
+
+                resultsContainer.classList.remove('hidden');
+                
+                // Scroll to the results
+                resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (error) {
+                console.error("Scenario Analysis Error:", error);
+                
+                // Provide specific debugging hints for common deployment errors
+                let userMessage = "An unexpected error occurred. Please check your network connection and API configuration.";
+                
+                if (error.message.includes("API request failed")) {
+                    userMessage = "API Request Failed (Authentication/Server Error): The server returned a 4xx or 5xx status. **Action:** Check your API key validity and ensure it is pasted into the code.";
+                } else if (error.message.includes("Failed to connect")) {
+                    userMessage = "Network/CORS Error: The browser likely blocked the request to the API. **Action:** Ensure your deployment platform allows external API requests or that your API key is correct.";
+                } else {
+                    userMessage = `General Error: ${error.message}`;
+                }
+
+                errorText.textContent = userMessage;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // 4. Hide loading state
+                btnText.textContent = 'ANALYZE SCENARIO ✨';
+                loadingSpinner.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
