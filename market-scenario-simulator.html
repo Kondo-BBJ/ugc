@@ -23,6 +23,20 @@
                 }
             }
         }
+
+        async function sendPrompt(prompt) {
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await response.json();
+  console.log(data); // You can replace this with code to display the result in your UI
+}
+
     </script>
     <style>
         /* Ensure the body uses the requested light gray background */
@@ -118,9 +132,9 @@
                 </div>
             </div>
             
-            <!-- Error Message: Added span with ID for better error reporting -->
+            <!-- Error Message -->
             <div id="error-message" class="mt-4 text-red-600 font-semibold hidden">
-                <span id="error-text">An error occurred. Please try a different query or check the console for details.</span>
+                An error occurred. Please try a different query or check the console for details.
             </div>
         </div>
     </section>
@@ -128,12 +142,8 @@
     <script>
         document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmission);
 
-        // 🚨 IMPORTANT: When deploying this app, you MUST replace the empty string below 
-        // with your actual Gemini API Key (e.g., 'AIzaSy...'). 
-        // Leaving it blank will cause authentication errors outside this environment.
-        const apiKey = "AIzaSyA_U7dpb67Vbh5uqY6D0iPg06h9pBoq44Y"; // <-- PASTE YOUR GEMINI API KEY HERE FOR DEPLOYMENT!
-        const model = "gemini-2.5-flash-preview-09-2025";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        // NOTE: The apiKey is intentionally left blank for the environment to provide it at runtime.
+        const apiUrl = "https://gemini-proxy-80hv.onrender.com/gemini"; // Replace with your actual Render URL
 
         const resultsContainer = document.getElementById('results-container');
         const analysisText = document.getElementById('analysis-text');
@@ -142,7 +152,6 @@
         const btnText = document.getElementById('btn-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const errorMessage = document.getElementById('error-message');
-        const errorText = document.getElementById('error-text');
 
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
@@ -336,9 +345,6 @@
             // 1. Reset UI and show loading state
             resultsContainer.classList.add('hidden');
             errorMessage.classList.add('hidden');
-            // Reset error message text
-            errorText.textContent = "An error occurred. Please try a different query or check the console for details.";
-
             analysisText.innerHTML = '';
             sourcesDisplay.innerHTML = '';
             btnText.textContent = 'ANALYZING...';
@@ -357,12 +363,8 @@
                 The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
 
                 const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    tools: [{ "google_search": {} }], // Enable Google Search grounding
-                    systemInstruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
-                };
+  prompt: userQuery
+};
 
                 const result = await fetchWithRetry(payload);
 
@@ -409,19 +411,6 @@
 
             } catch (error) {
                 console.error("Scenario Analysis Error:", error);
-                
-                // Provide specific debugging hints for common deployment errors
-                let userMessage = "An unexpected error occurred. Please check your network connection and API configuration.";
-                
-                if (error.message.includes("API request failed")) {
-                    userMessage = "API Request Failed (Authentication/Server Error): The server returned a 4xx or 5xx status. **Action:** Check your API key validity and ensure it is pasted into the code.";
-                } else if (error.message.includes("Failed to connect")) {
-                    userMessage = "Network/CORS Error: The browser likely blocked the request to the API. **Action:** Ensure your deployment platform allows external API requests or that your API key is correct.";
-                } else {
-                    userMessage = `General Error: ${error.message}`;
-                }
-
-                errorText.textContent = userMessage;
                 errorMessage.classList.remove('hidden');
             } finally {
                 // 4. Hide loading state
@@ -433,3 +422,5 @@
     </script>
 </body>
 </html>
+
+
