@@ -129,40 +129,48 @@
 
         /* PRINT STYLES for PDF Export */
         @media print {
-            /* Hide everything except the report content */
+            /* Hide everything on the page by default */
             body > * {
-                visibility: hidden;
+                visibility: hidden !important;
             }
-            /* Make the main report container and its children visible */
+            
+            /* Make ONLY the results container and its children visible */
             #results-container, 
-            #analysis-text, 
-            #sources-display, 
-            #llm-tool,
             #results-container * {
                 visibility: visible !important;
-                position: static !important;
+            }
+            
+            /* Reset the results container to fill the page */
+            #results-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
                 width: 100% !important;
                 max-width: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
             }
-            /* Reset header/body margins for printing */
-            body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            /* Ensure the report title is visible */
+
+            /* Ensure the report title (h4) uses black text for printing */
             #results-container h4 {
-                color: #1f2937 !important; /* Use black text for printing */
-                padding-top: 1rem;
+                color: #1f2937 !important; /* Use black text */
             }
-            /* Hide the form and the buttons on print */
-            #scenario-form, 
-            #copy-btn, 
-            #pdf-btn,
-            .flex-col > .md\:w-1\/4 { /* Target the wrapper buttons */
+
+            /* Hide the buttons from the print view */
+            #button-wrapper {
                 display: none !important;
+            }
+            
+            /* Ensure the dynamic date footer is visible on print */
+            #print-date-footer {
+                display: block !important;
+                position: fixed !important;
+                bottom: 1cm !important; /* Position it within the margin */
+                left: 1.5cm !important;
+                color: #555 !important;
+                font-size: 8pt !important;
             }
             
             /* Custom print footer (Page Number & Date) */
@@ -170,15 +178,8 @@
                 size: A4 portrait;
                 margin: 1.5cm; /* Ensure space for header/footer */
 
-                /* Page Number and Date in Footer */
-                @bottom-left {
-                    /* Accesses the date set on the body's data-print-date attribute in JS */
-                    content: "BullBearJapan Analysis | Print Date: " attr(data-print-date);
-                    font-size: 8pt;
-                    color: #555;
-                }
+                /* Page Number (This is more reliable than the date) */
                 @bottom-right {
-                    /* Provides Page X of Y numbering */
                     content: "Page " counter(page) " of " counter(pages);
                     font-size: 8pt;
                     color: #555;
@@ -187,7 +188,7 @@
         }
     </style>
     <!-- Load Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display-swap" rel="stylesheet">
 </head>
 <body class="flex justify-center pt-12 pb-24">
 
@@ -223,8 +224,8 @@
                     <!-- Sources will be injected here -->
                 </div>
                 
-                <!-- New Buttons (Wrapped for flexible layout) -->
-                <div class="flex flex-col md:flex-row justify-center gap-4 mt-6">
+                <!-- Wrapper for buttons -->
+                <div id="button-wrapper" class="flex flex-col md:flex-row justify-center gap-4 mt-6">
                     <!-- PDF Button -->
                     <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="pdf-btn-text">📄 Export to PDF</span>
@@ -233,6 +234,11 @@
                     <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
                     </button>
+                </div>
+
+                <!-- NEW: Dynamic Print Date Footer (Hidden on screen, visible on print) -->
+                <div id="print-date-footer" class="hidden text-xs text-gray-500">
+                    <!-- Date will be injected here by JavaScript -->
                 </div>
             </div>
             
@@ -256,23 +262,27 @@
         const btnText = document.getElementById('btn-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const errorMessage = document.getElementById('error-message');
+        
+        // NEW: Get reference to the print date footer element
+        const printDateFooter = document.getElementById('print-date-footer');
 
         /**
          * Triggers the browser's print dialog to export the report to PDF,
-         * ensuring the page numbers and print date are included via CSS print rules.
+         * ensuring the page numbers and print date are included.
          */
         function exportToPDF() {
-            // Set the dynamic print date on the body element so CSS @page can access it
+            // 1. Get current date and format it
             const now = new Date();
             const dateString = now.toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'short', 
                 day: 'numeric' 
             });
-            // The CSS @page rule uses this data attribute for the footer
-            document.body.setAttribute('data-print-date', dateString);
+            
+            // 2. Inject the date string *directly* into the print footer element
+            printDateFooter.textContent = `BullBearJapan Analysis | Print Date: ${dateString}`;
 
-            // Trigger the browser's print function
+            // 3. Trigger the browser's print function
             window.print();
         }
 
