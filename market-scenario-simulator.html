@@ -165,6 +165,8 @@
             
             /* Ensure the dynamic date footer is visible on print */
             #print-date-footer {
+                /* Explicitly override the body > * visibility: hidden rule */
+                visibility: visible !important; 
                 display: block !important;
                 position: fixed !important;
                 bottom: 1cm !important; /* Position it within the margin */
@@ -188,7 +190,7 @@
         }
     </style>
     <!-- Load Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display-swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="flex justify-center pt-12 pb-24">
 
@@ -235,17 +237,18 @@
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
                     </button>
                 </div>
-
-                <!-- NEW: Dynamic Print Date Footer (Hidden on screen, visible on print) -->
-                <div id="print-date-footer" class="hidden text-xs text-gray-500">
-                    <!-- Date will be injected here by JavaScript -->
-                </div>
             </div>
             
             <!-- Error Message -->
             <div id="error-message" class="mt-4 text-red-600 font-semibold hidden">
                 An error occurred. Please try a different query or check the console for details.
             </div>
+        </div>
+
+        <!-- NEW POSITION: Dynamic Print Date Footer (Hidden on screen, visible on print) -->
+        <!-- Added style="display: none;" to hide it robustly on screen -->
+        <div id="print-date-footer" class="text-xs text-gray-500" style="display: none;">
+            <!-- Date will be injected here by JavaScript -->
         </div>
     </section>
 
