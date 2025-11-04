@@ -701,7 +701,7 @@
 
             // Use the global state for 12-hour format preference
             const timeOptions = { 
-                hour: '2-digit', 
+                hour: is12HourFormat ? 'numeric' : '2-digit', // <-- FIX: Use 'numeric' for 12h, '2-digit' for 24h
                 minute: '2-digit', 
                 second: '2-digit', 
                 hour12: is12HourFormat, // Toggles between 24h and AM/PM
@@ -831,3 +831,4 @@
     </script>
 </body>
 </html>
+
