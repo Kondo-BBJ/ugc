@@ -127,6 +127,64 @@
             color: #1f2937;
         }
 
+        /* PRINT STYLES for PDF Export */
+        @media print {
+            /* Hide everything except the report content */
+            body > * {
+                visibility: hidden;
+            }
+            /* Make the main report container and its children visible */
+            #results-container, 
+            #analysis-text, 
+            #sources-display, 
+            #llm-tool,
+            #results-container * {
+                visibility: visible !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            /* Reset header/body margins for printing */
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            /* Ensure the report title is visible */
+            #results-container h4 {
+                color: #1f2937 !important; /* Use black text for printing */
+                padding-top: 1rem;
+            }
+            /* Hide the form and the buttons on print */
+            #scenario-form, 
+            #copy-btn, 
+            #pdf-btn,
+            .flex-col > .md\:w-1\/4 { /* Target the wrapper buttons */
+                display: none !important;
+            }
+            
+            /* Custom print footer (Page Number & Date) */
+            @page {
+                size: A4 portrait;
+                margin: 1.5cm; /* Ensure space for header/footer */
+
+                /* Page Number and Date in Footer */
+                @bottom-left {
+                    /* Accesses the date set on the body's data-print-date attribute in JS */
+                    content: "BullBearJapan Analysis | Print Date: " attr(data-print-date);
+                    font-size: 8pt;
+                    color: #555;
+                }
+                @bottom-right {
+                    /* Provides Page X of Y numbering */
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 8pt;
+                    color: #555;
+                }
+            }
+        }
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -165,9 +223,14 @@
                     <!-- Sources will be injected here -->
                 </div>
                 
-                <!-- New Copy Button (Wrapped for centering and width) -->
-                <div class="flex justify-center">
-                    <button type="button" id="copy-btn" onclick="copyReport()" class="mt-6 w-full md:w-1/2 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                <!-- New Buttons (Wrapped for flexible layout) -->
+                <div class="flex flex-col md:flex-row justify-center gap-4 mt-6">
+                    <!-- PDF Button -->
+                    <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                        <span id="pdf-btn-text">📄 Export to PDF</span>
+                    </button>
+                    <!-- Copy Button -->
+                    <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
                     </button>
                 </div>
@@ -193,6 +256,25 @@
         const btnText = document.getElementById('btn-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const errorMessage = document.getElementById('error-message');
+
+        /**
+         * Triggers the browser's print dialog to export the report to PDF,
+         * ensuring the page numbers and print date are included via CSS print rules.
+         */
+        function exportToPDF() {
+            // Set the dynamic print date on the body element so CSS @page can access it
+            const now = new Date();
+            const dateString = now.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            // The CSS @page rule uses this data attribute for the footer
+            document.body.setAttribute('data-print-date', dateString);
+
+            // Trigger the browser's print function
+            window.print();
+        }
 
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
