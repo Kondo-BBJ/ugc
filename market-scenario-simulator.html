@@ -144,6 +144,7 @@
 
         // NOTE: The apiKey is intentionally left blank for the environment to provide it at runtime.
         const apiUrl = "https://gemini-proxy-80hv.onrender.com/gemini"; // Replace with your actual Render URL
+
         const resultsContainer = document.getElementById('results-container');
         const analysisText = document.getElementById('analysis-text');
         const sourcesDisplay = document.getElementById('sources-display');
@@ -245,14 +246,22 @@
                 let line = lines[i].trim();
                 let isTableLine = line.startsWith('|');
                 let isListLine = line.startsWith('* ') || line.startsWith('- ');
-                let isHeading = line.startsWith('##### ');
+                
+                // --- FIX: Use regex to capture any markdown heading (1 to 6 hash marks) ---
+                const headingMatch = line.match(/^(#+)\s*(.*)/);
+                let isHeading = headingMatch !== null;
+                // -----------------------------------------------------------------------
+                
                 let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
 
                 // Handle closing any open blocks first if the new line breaks the block type
                 closeTags(isListLine, isTableLine);
 
                 if (isHeading) {
-                    outputHtml += line.replace(/##### (.+)/g, '<h5>$1</h5>');
+                    // Extract the text content from the heading match
+                    const headingText = headingMatch[2].trim();
+                    // We consistently convert all Markdown headings to <h5> tags
+                    outputHtml += `<h5>${headingText}</h5>`;
                 } else if (isTableLine) {
                     if (isSeparator) {
                         continue; // Skip the separator line
