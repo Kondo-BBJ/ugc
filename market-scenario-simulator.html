@@ -86,7 +86,7 @@
             font-weight: 800;
             color: #1f2937;
         }
-        /* Styling for the LaTeX formula block */
+        /* Styling for the LaTeX formula block (Display Math) */
         .formula-block {
             background-color: #f3f4f6; /* Light gray background */
             padding: 1rem;
@@ -99,6 +99,34 @@
             color: #4f46e5; /* Primary blue for prominence */
             font-weight: 600;
         }
+        /* New style for inline math */
+        .inline-formula {
+            padding: 0 0.25rem;
+            background-color: #eef2ff; /* Indigo 50 */
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
+        /* New style for the key sub-points */
+        .key-point {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .key-point::before {
+            content: '•'; /* Use a strong dot/bullet */
+            position: absolute;
+            left: 0.5rem;
+            font-size: 1.25rem;
+            line-height: 1;
+            color: #4f46e5; /* Primary blue color for the dot */
+            font-weight: bold;
+        }
+        .key-point strong {
+            font-weight: 800;
+            color: #1f2937;
+        }
+
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -225,26 +253,79 @@
          * @returns {string} The HTML string.
          */
         function markdownToHtml(markdownText) {
-            // 1. Convert **bold** to <strong> and remove Windows carriage returns
+            // 1. Remove Windows carriage returns
             let html = markdownText.replace(/\r/g, '');
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
-
-            // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
-            // Use 'gs' (global, dotAll) to capture content across multiple lines
-            html = html.replace(/\$\$(.*?)\$\$/gs, (match, content) => {
-                // Wrap content in a styled div for visual separation and monospace font
-                return `<div class="formula-block">${content.trim()}</div>`;
+            
+            // --- NEW FIX: Convert Key Point pattern to structured HTML ---
+            // Pattern: **Bold Label:** *Italic Content* (This often breaks and leaves an asterisk)
+            // Replacement: <div class="key-point"><strong>Bold Label:</strong> Non-Italic Content</div>
+            // This replacement must happen *before* generic bold/italic replacement.
+            // Regex explanation:
+            // \*\* - match literal ** (start bold)
+            // (.*?): - capture content until colon, non-greedy (The label)
+            // \*\* - match literal ** (end bold)
+            // \s* - match optional whitespace
+            // \* - match literal * (start italic)
+            // (.*?) - capture content until next * or end of line (The content)
+            // \*? - optionally match single * at the end (This captures the rogue asterisk)
+            // $ - match end of line
+            const keyPointRegex = /\*\*(.*?):\*\*\s*\*(.*?)\*?\s*$/gm;
+            html = html.replace(keyPointRegex, (match, label, content) => {
+                // Remove any remaining * within the captured content just in case, and trim
+                const cleanedContent = content.trim().replace(/\*/g, ''); 
+                return `<div class="key-point"><strong>${label.trim()}:</strong> ${cleanedContent}</div>`;
             });
             // --------------------------------------------------------------------------
 
-            // 2. Replace common directional/impact symbols with Unicode Emojis
+            // 2. Convert generic **bold** to <strong> and *italics* to <em>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); 
+            
+            // --- Handle inline LaTeX math $...$ ---
+            html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {
+                let inlineFormula = content.trim();
+                
+                inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
+                
+                inlineFormula = inlineFormula.replace(/\\times/g, '×');
+                inlineFormula = inlineFormula.replace(/\\div/g, '÷');
+                inlineFormula = inlineFormula.replace(/\\cdot/g, '•');
+                
+                inlineFormula = inlineFormula.replace(/\\/g, '');
+
+                return `<span class="inline-formula font-mono text-primary-blue">${inlineFormula.trim()}</span>`;
+            });
+            // ------------------------------------------
+
+            // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
+            html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                let formula = content.trim();
+
+                formula = formula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                formula = formula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
+
+                formula = formula.replace(/\\times/g, '×');
+                formula = formula.replace(/\\div/g, '÷');
+                formula = formula.replace(/\\cdot/g, '•');
+                
+                formula = formula.replace(/\\/g, '');
+                
+                return `<div class="formula-block">${formula.trim()}</div>`;
+            });
+            // --------------------------------------------------------------------------
+
+            // 3. Replace common directional/impact symbols with Unicode Emojis
             html = html.replace(/\\downarrow/g, '↓');      // LaTeX Down Arrow
             html = html.replace(/\\uparrow/g, '↑');        // LaTeX Up Arrow
             html = html.replace(/\\leftrightarrow/g, '↔');  // LaTeX Left-Right Arrow
-            // Also handle common text/symbol usage
             html = html.replace(/\\up/g, '↑'); 
             html = html.replace(/\\down/g, '↓'); 
             html = html.replace(/\\neutral/g, '↔'); 
+
+            // 4. Final cleanup for lone asterisks: Remove any remaining single asterisks. 
+            // This is now the last check, ensuring only rogue formatting marks are removed.
+            html = html.replace(/\*/g, ''); 
 
             const lines = html.split('\n');
             let inTable = false;
@@ -268,22 +349,21 @@
                 let isTableLine = line.startsWith('|');
                 let isListLine = line.startsWith('* ') || line.startsWith('- ');
                 
-                // --- FIX: Use regex to capture any markdown heading (1 to 6 hash marks) ---
                 const headingMatch = line.match(/^(#+)\s*(.*)/);
                 let isHeading = headingMatch !== null;
-                // -----------------------------------------------------------------------
                 
                 let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
                 
-                // Check if the line is already a processed formula block
-                let isFormulaBlock = line.startsWith('<div class="formula-block">');
+                // Check if the line is already a processed formula block or key point
+                let isFormulaBlock = line.startsWith('<div class="formula-block">') || line.startsWith('<span class="inline-formula');
+                let isKeyPoint = line.startsWith('<div class="key-point">');
 
 
                 // Handle closing any open blocks first if the new line breaks the block type
                 closeTags(isListLine, isTableLine);
                 
-                if (isFormulaBlock) {
-                    // Do nothing, just pass the already-formatted block through
+                if (isFormulaBlock || isKeyPoint) {
+                    // Pass already-formatted blocks through
                     outputHtml += line;
                 } else if (isHeading) {
                     // Extract the text content from the heading match
@@ -396,6 +476,10 @@
                 2. Affected Key Price Drivers (Reference concepts like Freight, Exchange Rates, COT, etc.)
                 3. Risk Mitigation Strategy (Provide a high-level suggestion)
                 
+                When describing key points within a section, format them as: **Bold Label:** *Italic descriptive text*. This is essential for the front-end parser.
+                
+                When using the Crush Margin formula, please use the standard conversion factors based on the yield per bushel (e.g., 44 lbs of meal and 11 lbs of oil) and use clear variable names in your LaTeX.
+
                 The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
 
                 const payload = {
