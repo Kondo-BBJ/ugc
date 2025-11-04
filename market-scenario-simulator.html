@@ -179,6 +179,9 @@
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
+
 </head>
 <body class="flex justify-center pt-12 pb-24">
 
@@ -223,6 +226,13 @@
                     <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="pdf-btn-text">📄 Export to PDF</span>
                     </button>
+
+		    <!-- PPT Button -->
+		    <button type="button" id="ppt-btn" onclick="exportToPPT()" class="w-full md:w-1/4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+			<span id="ppt-btn-text">📊 Export to PPT</span>
+		    </button>
+
+
                     <!-- Copy Button -->
                     <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
@@ -606,6 +616,83 @@
                 submitBtn.disabled = false;
             }
         }
+
+
+function exportToPPT() {
+  const container = document.getElementById("analysis-text");
+  const pptx = new PptxGenJS();
+
+  // Title Slide (centered for 16:9)
+  const titleSlide = pptx.addSlide();
+  titleSlide.addText("BullBearJapan, Inc.", {
+    x: 0.5, y: 1.5, w: 9.0,
+    fontSize: 32, bold: true, align: "center", color: "003366"
+  });
+  titleSlide.addText("Scenario Analysis Report", {
+    x: 0.5, y: 2.5, w: 9.0,
+    fontSize: 24, align: "center", color: "444444"
+  });
+  titleSlide.addText(`Generated: ${new Date().toLocaleDateString()}`, {
+    x: 0.5, y: 3.5, w: 9.0,
+    fontSize: 14, align: "center", color: "888888"
+  });
+
+  const children = Array.from(container.children);
+  let currentSlide = null;
+  let slideIndex = 1;
+  let bullets = [];
+
+  children.forEach((el, idx) => {
+    if (el.tagName === "H5") {
+      // Flush previous bullets
+      if (currentSlide && bullets.length > 0) {
+        const bulletText = bullets.join("\n");
+        currentSlide.addText(bulletText, {
+          x: 0.5, y: 1.4, w: 9.0, h: 3.8,
+          fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+        });
+        bullets = [];
+      }
+
+      // New slide
+      currentSlide = pptx.addSlide();
+
+      // Title box (slightly higher)
+      currentSlide.addText(el.innerText, {
+        x: 0.5, y: 0.4, w: 9.0, h: 1.0,
+        fontSize: 26, bold: true, align: "center", color: "003366"
+      });
+
+      // Footer (moved up to stay inside slide)
+      currentSlide.addText(`BullBearJapan, Inc. — Slide ${slideIndex}`, {
+        x: 0.5, y: 5.4, w: 9.0,
+        fontSize: 10, color: "888888", align: "center"
+      });
+
+      slideIndex++;
+    } else if (
+      currentSlide &&
+      (el.tagName === "P" || el.tagName === "LI" || el.classList.contains("key-point"))
+    ) {
+      const text = el.innerText.trim();
+      if (text && text !== "---") {
+        bullets.push(`• ${text}`);
+      }
+    }
+
+    // Final flush
+    if (idx === children.length - 1 && currentSlide && bullets.length > 0) {
+      const bulletText = bullets.join("\n");
+      currentSlide.addText(bulletText, {
+        x: 0.5, y: 1.4, w: 9.0, h: 3.8,
+        fontSize: 18, color: "444444", lineSpacingMultiple: 1.2
+      });
+    }
+  });
+
+  pptx.writeFile("Scenario_Analysis_Report.pptx");
+}
+
     </script>
 </body>
 </html>
