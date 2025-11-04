@@ -6,17 +6,7 @@
     <title>Live Market Scenario Simulator</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- PptxGenJS Library for PPT Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.min.js"></script>
-
-    <!-- KaTeX Libraries for Math Rendering -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" xintegrity="sha384-g/BYj3kS+sNe1KzrfK+p/BglGfrM/E+MYZfLYTiB+bS8rWnKkL/P/MYP3V+u/A1c" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" xintegrity="sha384-hIoPIa0K8mA/C2hGf+Ktyv0S0h9TjE/3vQJ/jLzQeI/QyL7PqR/TjW/JFLBBwzP" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" xintegrity="sha384-CstBRsP+xI+hGA+xxG/bSGFNBReK+cuRL/Dk8BvOaMfHCRFvEmvR/hJJc8yJFVLJ" crossorigin="anonymous"></script>
-    <!-- End KaTeX -->
-
-    <!-- Configure Tailwind -->
+    <!-- Configure Tailwind for Inter font and custom colors (Blue theme) -->
     <script>
         tailwind.config = {
             theme: {
@@ -33,8 +23,21 @@
                 }
             }
         }
+
+        async function sendPrompt(prompt) {
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  });
+
+  const data = await response.json();
+  console.log(data); // You can replace this with code to display the result in your UI
+}
+
     </script>
-    
     <style>
         /* Ensure the body uses the requested light gray background */
         body {
@@ -48,7 +51,7 @@
             font-size: 1.125rem; /* text-lg */
             font-weight: 700; /* font-bold */
             color: #4f46e5; /* primary-blue color */
-            margin-top: 1.25rem;
+            margin-top: 1rem;
             margin-bottom: 0.5rem;
         }
         /* Adjusted paragraph margin for cleaner breaks */
@@ -78,13 +81,31 @@
             text-transform: uppercase;
             font-size: 0.875rem;
         }
+        /* Ensure the strong tag inside the table works */
         .prose table strong {
             font-weight: 800;
             color: #1f2937;
         }
-        /* KaTeX Font Fix - ensures fonts load correctly */
-        .katex { font-size: 1.1em; }
-
+        /* Styling for the LaTeX formula block (Display Math) */
+        .formula-block {
+            background-color: #f3f4f6; /* Light gray background */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            font-family: monospace; /* Monospace font for code/formula */
+            white-space: pre-wrap;
+            overflow-x: auto;
+            color: #4f46e5; /* Primary blue for prominence */
+            font-weight: 600;
+        }
+        /* New style for inline math */
+        .inline-formula {
+            padding: 0 0.25rem;
+            background-color: #eef2ff; /* Indigo 50 */
+            border-radius: 0.25rem;
+            font-weight: 500;
+        }
         /* New style for the key sub-points */
         .key-point {
             margin-top: 0.75rem;
@@ -108,9 +129,6 @@
 
         /* PRINT STYLES for PDF Export */
         @media print {
-            body {
-                background-color: #fff;
-            }
             /* Hide everything on the page by default */
             body > * {
                 visibility: hidden !important;
@@ -130,25 +148,14 @@
                 width: 100% !important;
                 max-width: none !important;
                 margin: 0 !important;
-                padding: 1cm !important; /* Use margin from @page */
+                padding: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
-                color: #000 !important;
             }
 
             /* Ensure the report title (h4) uses black text for printing */
-            #results-container h4, .prose h5, .prose p {
-                color: #000 !important; /* Use black text */
-            }
-            .prose table {
-                box-shadow: none;
-                border: 1px solid #ccc;
-            }
-            .prose th, .prose td {
-                border: 1px solid #ddd;
-            }
-            .prose th {
-                 background-color: #eee !important;
+            #results-container h4 {
+                color: #1f2937 !important; /* Use black text */
             }
 
             /* Hide the buttons from the print view */
@@ -156,43 +163,22 @@
                 display: none !important;
             }
             
-            /* Dynamic Print Footer (Date + Page) */
-            #print-date-footer {
-                display: block !important;
-                visibility: visible !important;
-                position: fixed;
-                bottom: 0;
-                left: 1cm;
-                font-size: 9pt;
-                color: #555;
-            }
-            #print-page-number {
-                display: block !important;
-                visibility: visible !important;
-                position: fixed;
-                bottom: 0;
-                right: 1cm;
-                font-size: 9pt;
-                color: #555;
-            }
-            
-            /* Custom print rules for pagination */
+            /* Custom print footer (Only Page Number is reliable) */
             @page {
                 size: A4 portrait;
-                margin: 1cm; /* Reduced margin */
+                margin: 1.5cm; /* Ensure space for header/footer */
 
-                /* These are often unreliable, we'll use a fixed-element fallback */
+                /* Page Number */
                 @bottom-right {
                     content: "Page " counter(page) " of " counter(pages);
-                    font-size: 9pt;
-                }
-                @bottom-left {
-                    content: attr(data-date); /* Attempt to get date */
-                    font-size: 9pt;
+                    font-size: 8pt;
+                    color: #555;
                 }
             }
-        } /* End @media print */
+        }
     </style>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="flex justify-center pt-12 pb-24">
 
@@ -209,7 +195,7 @@
             <form id="scenario-form" class="space-y-4">
                 <textarea id="scenario-prompt" placeholder="Example: What is the price impact of a severe drought in the US Midwest next summer on corn and soybean futures?" rows="4" class="w-full p-4 border border-gray-300 rounded-lg bg-white text-text-dark focus:ring-secondary-blue focus:border-secondary-blue resize-none"></textarea>
                 
-                <!-- ANALYZE SCENARIO Button -->
+                <!-- ANALYZE SCENARIO Button: Now w-1/2 and centered on medium screens and up -->
                 <div class="flex justify-center">
                     <button type="submit" id="submit-btn" class="w-full md:w-1/2 bg-primary-blue hover:bg-secondary-blue text-white font-bold text-lg py-3 rounded-lg transition duration-300 shadow-lg flex items-center justify-center">
                         <span id="btn-text">ANALYZE SCENARIO ✨</span>
@@ -228,21 +214,17 @@
                     <!-- Sources will be injected here -->
                 </div>
                 
-                <!-- Report Date (Injected as content for PDF) -->
+                <!-- NEW: Report Date (Injected as content) -->
                 <p id="report-date" class="text-xs text-right text-gray-500 mt-4"></p>
 
                 <!-- Wrapper for buttons -->
                 <div id="button-wrapper" class="flex flex-col md:flex-row justify-center gap-4 mt-6">
                     <!-- PDF Button -->
-                    <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/3 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                    <button type="button" id="pdf-btn" onclick="exportToPDF()" class="w-full md:w-1/4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="pdf-btn-text">📄 Export to PDF</span>
                     </button>
-                    <!-- PPT Button -->
-                    <button type="button" id="ppt-btn" onclick="exportToPPT()" class="w-full md:w-1/3 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md opacity-50 cursor-not-allowed" disabled>
-                        <span id="ppt-btn-text">📊 Export to PPT (Gen...)</span>
-                    </button>
                     <!-- Copy Button -->
-                    <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/3 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
+                    <button type="button" id="copy-btn" onclick="copyReport()" class="w-full md:w-1/4 bg-gray-200 hover:bg-gray-300 text-text-dark font-bold py-2 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <span id="copy-btn-text">📋 Copy Report to Clipboard</span>
                     </button>
                 </div>
@@ -253,217 +235,160 @@
                 An error occurred. Please try a different query or check the console for details.
             </div>
         </div>
-
-        <!-- Elements used ONLY for printing -->
-        <div id="print-date-footer" class="hidden"></div>
-        <div id="print-page-number" class="hidden">Page <span class="page-number"></span> of <span class="total-pages"></span></div>
-        <div id="print-header-title" class="hidden">Scenario Analysis Report</div>
-
     </section>
 
     <script>
-        // --- Global Variables ---
-        const apiUrl = "https://gemini-proxy-80hv.onrender.com/gemini"; // User's proxy
-        const apiKey = ""; // API key is handled by the proxy
+        document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmission);
 
-        // DOM Elements
+        // NOTE: The apiKey is intentionally left blank for the environment to provide it at runtime.
+        const apiUrl = "https://gemini-proxy-80hv.onrender.com/gemini"; // Replace with your actual Render URL
+
         const resultsContainer = document.getElementById('results-container');
         const analysisText = document.getElementById('analysis-text');
         const sourcesDisplay = document.getElementById('sources-display');
-        const reportDate = document.getElementById('report-date');
+        const reportDate = document.getElementById('report-date'); // NEW Element reference
         const submitBtn = document.getElementById('submit-btn');
         const btnText = document.getElementById('btn-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const errorMessage = document.getElementById('error-message');
-        const copyBtnText = document.getElementById('copy-btn-text');
-        const pdfBtn = document.getElementById('pdf-btn');
-        const pptBtn = document.getElementById('ppt-btn');
-        const pptBtnText = document.getElementById('ppt-btn-text');
-
-        // State for exports
-        let currentReportSummary = "";
-        let currentReportTitle = "";
         
-        // --- Event Listeners ---
-        document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmission);
-        
-        /**
-         * Formats and sets the date string for PDF footer.
-         * This is notoriously unreliable with CSS attr(), so we set the full string.
-         */
-        function setPrintDate() {
-            const now = new Date();
-            const dateString = now.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            const fullDateString = `Generated: ${dateString}`;
-            
-            // Set for HTML display
-            reportDate.textContent = fullDateString;
-            
-            // Set for print footer (this is the one that often fails, but we try)
-            const printFooter = document.getElementById('print-date-footer');
-            if (printFooter) {
-                printFooter.textContent = fullDateString;
-            }
-            // Also set attribute for CSS content()
-            document.body.setAttribute('data-date', fullDateString);
-        }
-
         /**
          * Triggers the browser's print dialog to export the report to PDF.
          */
         function exportToPDF() {
-            setPrintDate(); // Ensure date is set right before printing
+            // No date injection needed here; the date is already in the DOM content.
             window.print();
         }
-
-        /**
-         * Generates and downloads a PowerPoint file with a summary.
-         */
-        function exportToPPT() {
-            if (!currentReportSummary) {
-                alert("The report summary is still generating. Please wait a moment and try again.");
-                return;
-            }
-
-            let pptx = new PptxGenJS();
-            pptx.layout = 'LAYOUT_16X9'; // Standard widescreen
-
-            // Slide 1: Title Slide
-            let slide1 = pptx.addSlide();
-            slide1.background = { color: "F3F4F6" }; // Light gray background
-            
-            slide1.addText("Scenario Analysis Report", { 
-                x: 0.5, y: 1.5, w: 9.0, 
-                fontSize: 32, 
-                fontFace: "Inter",
-                bold: true, 
-                color: "1F2937" // text-dark
-            });
-            
-            slide1.addText(`Query: ${currentReportTitle}`, { 
-                x: 0.5, y: 2.2, w: 9.0, 
-                fontSize: 16, 
-                fontFace: "Inter",
-                color: "4F46E5" // primary-blue
-            });
-            
-            slide1.addText(`BullBearJapan, Inc. | ${new Date().toLocaleDateString('en-US')}`, { 
-                x: 0.5, y: 5.0, w: 9.0, 
-                fontSize: 12, 
-                fontFace: "Inter",
-                color: "6B7280" // gray-500
-            });
-
-            // Slide 2: Summary Slide
-            let slide2 = pptx.addSlide();
-            slide2.background = { color: "FFFFFF" };
-            
-            slide2.addText("Executive Summary", { 
-                x: 0.5, y: 0.25, w: 9.0, 
-                fontSize: 24, 
-                fontFace: "Inter",
-                bold: true, 
-                color: "1F2937" 
-            });
-
-            // Add summary text as bullet points
-            slide2.addText(currentReportSummary, { 
-                x: 0.5, y: 1.0, w: 9.0, h: 4.0, 
-                fontSize: 16, 
-                fontFace: "Inter",
-                color: "374151", // gray-700
-                bullet: true,
-                valign: 'top'
-            });
-
-            // Save the file
-            pptx.writeFile({ fileName: 'Scenario_Report_Summary.pptx' });
-        }
-
 
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
          */
         function copyReport() {
             const promptText = document.getElementById('scenario-prompt').value.trim();
-            const reportContent = document.getElementById('analysis-text').innerText; // Use innerText to get formatted text
+            const reportContent = document.getElementById('analysis-text').innerText;
             const sourcesText = document.getElementById('sources-display').innerText;
-            const reportDateText = document.getElementById('report-date').innerText;
-            
+            const reportDateText = document.getElementById('report-date').innerText; // Include date in copy
+            const copyButtonText = document.getElementById('copy-btn-text');
+
             if (!reportContent) return;
 
+            // Construct the comprehensive text to copy
             const fullReport = [
                 "--- BullBearJapan, Inc. Scenario Analysis Report ---",
                 `QUESTION: ${promptText}`,
                 "\n--- ANALYSIS ---",
                 reportContent,
                 `\n${sourcesText}`,
-                `${reportDateText}\n`,
+                `${reportDateText}\n`, // Add the date here
                 "-------------------------------------------------------"
             ].join('\n');
 
+            // Use document.execCommand('copy') for guaranteed compatibility
             try {
+                // 1. Create a temporary textarea element
                 const textarea = document.createElement('textarea');
                 textarea.value = fullReport;
+                // 2. Make it invisible and append it to the body
                 textarea.style.position = 'fixed';
                 textarea.style.opacity = 0;
                 document.body.appendChild(textarea);
+                
+                // 3. Select the text and execute copy command
                 textarea.select();
                 document.execCommand('copy');
+                
+                // 4. Remove the temporary element
                 document.body.removeChild(textarea);
 
-                copyBtnText.textContent = '✅ Copied to Clipboard!';
-                setTimeout(() => { copyBtnText.textContent = '📋 Copy Report to Clipboard'; }, 2000);
+                // 5. Provide visual feedback
+                copyButtonText.textContent = '✅ Copied to Clipboard!';
+                setTimeout(() => {
+                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
+                }, 2000);
+
             } catch (err) {
                 console.error('Copy failed:', err);
-                copyBtnText.textContent = '❌ Copy Failed!';
-                setTimeout(() => { copyBtnText.textContent = '📋 Copy Report to Clipboard'; }, 3000);
+                copyButtonText.textContent = '❌ Copy Failed!';
+                setTimeout(() => {
+                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
+                }, 3000);
             }
         }
 
         /**
-         * Converts markdown-like text to formatted HTML for display.
-         * This now leaves math ( $$...$$ and $...$ ) untouched for KaTeX to render.
-         * @param {string} text - The text to convert.
+         * Converts basic Markdown (headings, bold, tables, lists, and symbols) to HTML.
+         * @param {string} markdownText - The text to convert.
          * @returns {string} The HTML string.
          */
-        function markdownToHtml(text) {
-            let html = text.replace(/\r/g, '');
-
-            // --- Key Point Conversion ---
-            // Pattern: **Bold Label:** *Italic Content* const keyPointRegex = /\*\*(.*?):\*\*\s*\*(.*?)\*?\s*$/gm;
+        function markdownToHtml(markdownText) {
+            // 1. Remove Windows carriage returns
+            let html = markdownText.replace(/\r/g, '');
+            
+            // --- FIX: Convert Key Point pattern to structured HTML ---
+            // Pattern: **Bold Label:** *Italic Content* (This often breaks and leaves an asterisk)
+            // Replacement: <div class="key-point"><strong>Bold Label:</strong> Non-Italic Content</div>
+            const keyPointRegex = /\*\*(.*?):\*\*\s*\*(.*?)\*?\s*$/gm;
             html = html.replace(keyPointRegex, (match, label, content) => {
                 const cleanedContent = content.trim().replace(/\*/g, ''); 
                 return `<div class="key-point"><strong>${label.trim()}:</strong> ${cleanedContent}</div>`;
             });
+            // --------------------------------------------------------------------------
 
-            // --- Standard Markdown Conversion (excluding math) ---
-            html = html
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                .replace(/\*(.*?)\*/g, '<em>$1</em>'); // Italics
+            // 2. Convert generic **bold** to <strong> and *italics* to <em>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); 
+            
+            // --- Handle inline LaTeX math $...$ ---
+            html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {
+                let inlineFormula = content.trim();
+                
+                inlineFormula = inlineFormula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                inlineFormula = inlineFormula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
+                
+                inlineFormula = inlineFormula.replace(/\\times/g, '×');
+                inlineFormula = inlineFormula.replace(/\\div/g, '÷');
+                inlineFormula = inlineFormula.replace(/\\cdot/g, '•');
+                
+                inlineFormula = inlineFormula.replace(/\\/g, '');
 
-            // --- Symbol/Arrow Replacement ---
-            html = html
-                .replace(/\\downarrow/g, '↓')
-                .replace(/\\uparrow/g, '↑')
-                .replace(/\\leftrightarrow/g, '↔')
-                .replace(/\\rightarrow/g, '→')
-                .replace(/\\times/g, '×')
-                .replace(/\\div/g, '÷')
-                .replace(/\\cdot/g, '•')
-                .replace(/\\text{([^}]+)}/g, '$1') // Handle \text{}
-                .replace(/\\mathrm{([^}]+)}/g, '$1'); // Handle \mathrm{}
+                return `<span class="inline-formula font-mono text-primary-blue">${inlineFormula.trim()}</span>`;
+            });
+            // ------------------------------------------
 
-            // --- Block Element Conversion (Paragraphs, Lists, Tables) ---
+            // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
+            html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, content) => {
+                let formula = content.trim();
+
+                formula = formula.replace(/\\text\s*{([^}]+)\s*}/g, '$1');
+                formula = formula.replace(/\\mathrm\s*{([^}]+)\s*}/g, '$1');
+
+                formula = formula.replace(/\\times/g, '×');
+                formula = formula.replace(/\\div/g, '÷');
+                formula = formula.replace(/\\cdot/g, '•');
+                
+                formula = formula.replace(/\\/g, '');
+                
+                return `<div class="formula-block">${formula.trim()}</div>`;
+            });
+            // --------------------------------------------------------------------------
+
+            // 3. Replace common directional/impact symbols with Unicode Emojis
+            html = html.replace(/\\downarrow/g, '↓');      // LaTeX Down Arrow
+            html = html.replace(/\\uparrow/g, '↑');        // LaTeX Up Arrow
+            html = html.replace(/\\leftrightarrow/g, '↔');  // LaTeX Left-Right Arrow
+            html = html.replace(/\\up/g, '↑'); 
+            html = html.replace(/\\down/g, '↓'); 
+            html = html.replace(/\\neutral/g, '↔'); 
+
+            // 4. Final cleanup for lone asterisks: Remove any remaining single asterisks. 
+            html = html.replace(/\*/g, ''); 
+
             const lines = html.split('\n');
             let inTable = false;
             let inList = false;
             let outputHtml = '';
 
+            // Utility to close open tags
             const closeTags = (currentLineIsList, currentLineIsTable) => {
                 if (inTable && !currentLineIsTable) {
                     outputHtml += '</tbody></table></div>';
@@ -477,68 +402,79 @@
 
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
-                
-                // Check if line is math, if so, pass it through unchanged for KaTeX
-                if (line.startsWith('$$') || line.includes('$')) {
-                    closeTags(false, false); // Close any open tags
-                    outputHtml += `<p>${line}</p>`; // Wrap in <p> to preserve spacing
-                    continue;
-                }
-
                 let isTableLine = line.startsWith('|');
                 let isListLine = line.startsWith('* ') || line.startsWith('- ');
-                const headingMatch = line.match(/^(#+)\s*(.*)/); // Matches ###, ####, ##### etc.
+                
+                const headingMatch = line.match(/^(#+)\s*(.*)/);
                 let isHeading = headingMatch !== null;
-                let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/);
+                
+                let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
+                
+                // Check if the line is already a processed formula block or key point
+                let isFormulaBlock = line.startsWith('<div class="formula-block">') || line.startsWith('<span class="inline-formula');
                 let isKeyPoint = line.startsWith('<div class="key-point">');
 
+
+                // Handle closing any open blocks first if the new line breaks the block type
                 closeTags(isListLine, isTableLine);
                 
-                if (isKeyPoint) {
-                    outputHtml += line; // Pass pre-formatted key points
+                if (isFormulaBlock || isKeyPoint) {
+                    // Pass already-formatted blocks through
+                    outputHtml += line;
                 } else if (isHeading) {
+                    // Extract the text content from the heading match
                     const headingText = headingMatch[2].trim();
-                    outputHtml += `<h5>${headingText}</h5>`; // Convert all to <h5>
+                    // We consistently convert all Markdown headings to <h5> tags
+                    outputHtml += `<h5>${headingText}</h5>`;
                 } else if (isTableLine) {
-                    if (isSeparator) continue; 
+                    if (isSeparator) {
+                        continue; // Skip the separator line
+                    }
 
+                    // Start of a table (header or row)
                     if (!inTable) {
                         inTable = true;
                         outputHtml += '<div class="overflow-x-auto"><table class="min-w-full">';
-                        const headerCells = line.split('|').filter((c, idx) => (idx > 0 && idx < line.split('|').length - 1));
+
+                        // The current line is the header row
+                        const headerCells = line.split('|').filter(c => c.trim() !== '');
                         outputHtml += '<thead><tr>' + headerCells.map(cell => `<th>${cell.trim()}</th>`).join('') + '</tr></thead><tbody>';
                     } else {
-                        const rowCells = line.split('|').filter((c, idx) => (idx > 0 && idx < line.split('|').length - 1));
+                        // Table row
+                        const rowCells = line.split('|').filter(c => c.trim() !== '');
                         outputHtml += '<tr>' + rowCells.map(cell => `<td>${cell.trim()}</td>`).join('') + '</tr>';
                     }
                 } else if (isListLine) {
                     if (!inList) {
                         inList = true;
+                        // Add Tailwind classes for disc style and margin for good spacing
                         outputHtml += '<ul class="list-disc ml-6 space-y-1 my-4">';
                     }
+                    // Remove the list marker (e.g., "* " or "- ") and wrap in <li>
                     const content = line.substring(line.indexOf(' ') + 1).trim();
                     outputHtml += `<li>${content}</li>`;
+
                 } else if (line) {
+                    // This is a paragraph line
+                    // Wrap in <p> tag for block spacing (p class handles the requested line break)
                     outputHtml += `<p>${line}</p>`;
                 }
+                // Ignore empty lines, unless they are closing a block
             }
 
-            closeTags(false, false); // Close any remaining tags
+            // Close any remaining open tags at the end of the content
+            closeTags(false, false);
 
             return outputHtml;
         }
 
+
         /**
-         * Fetches data from the API with retry logic.
+         * Generic function to handle the fetch request with exponential backoff.
+         * @param {object} payload - The request body payload.
+         * @param {number} retries - Number of retry attempts.
          */
         async function fetchWithRetry(payload, retries = 3) {
-            // Check for API key *before* fetching
-            if (apiKey === "PASTE_YOUR_KEY_HERE_FOR_DEPLOYMENT" || apiKey === "") {
-                // We're in the secure dev environment (like Canvas)
-                // The proxy will handle auth, so we don't need to check the key.
-                // If deployed, this check *would* be important.
-            }
-
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(apiUrl, {
@@ -547,26 +483,24 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (response.status === 429) { // Rate limit
+                    if (response.status === 429) {
+                        // Rate limit exceeded, prepare to retry
                         if (i < retries - 1) {
-                            const delay = Math.pow(2, i) * 1000;
+                            const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s, ...
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         }
                     }
 
                     if (!response.ok) {
-                        const errData = await response.json();
-                        console.error("API Error Response:", errData);
-                        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                        throw new Error(`API request failed with status: ${response.status}`);
                     }
-                    
                     return response.json();
 
                 } catch (error) {
                     console.error("Fetch attempt failed:", error);
                     if (i === retries - 1) {
-                        throw new Error(`Could not connect to the API after ${retries} retries. Check console for details.`);
+                        throw new Error("Failed to connect to the Gemini API after multiple retries.");
                     }
                     const delay = Math.pow(2, i) * 1000;
                     await new Promise(resolve => setTimeout(resolve, delay));
@@ -574,45 +508,6 @@
             }
         }
 
-        /**
-         * Asynchronously fetches the summary for the report.
-         */
-        async function fetchReportSummary(originalQuery, reportText) {
-            try {
-                const summaryPrompt = `Based on the user's original query: "${originalQuery}", provide a concise summary of the following analysis.
-                The summary must be 3-5 bullet points, suitable for a single PowerPoint slide.
-                Focus only on the main impacts and key takeaways.
-                
-                ANALYSIS TO SUMMARIZE:
-                ---
-                ${reportText}
-                ---
-                
-                SUMMARY:`;
-
-                const payload = { prompt: summaryPrompt };
-                const result = await fetchWithRetry(payload);
-                
-                const candidate = result.candidates?.[0];
-                if (candidate && candidate.content?.parts?.[0]?.text) {
-                    currentReportSummary = candidate.content.parts[0].text;
-                    // Enable the PPT button
-                    pptBtn.disabled = false;
-                    pptBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    pptBtnText.textContent = '📊 Export to PPT';
-                }
-            } catch (error) {
-                console.error("Failed to generate summary:", error);
-                // If summary fails, keep button disabled but show a different state
-                pptBtnText.textContent = '❌ Summary Failed';
-                pptBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                pptBtn.classList.add('bg-red-500', 'cursor-not-allowed');
-            }
-        }
-
-        /**
-         * Main handler for submitting the scenario form.
-         */
         async function handleScenarioSubmission(e) {
             e.preventDefault();
             
@@ -624,23 +519,13 @@
             errorMessage.classList.add('hidden');
             analysisText.innerHTML = '';
             sourcesDisplay.innerHTML = '';
-            reportDate.textContent = '';
-            
+            reportDate.textContent = ''; // Clear date field
             btnText.textContent = 'ANALYZING...';
             loadingSpinner.classList.remove('hidden');
             submitBtn.disabled = true;
-            
-            // Reset and disable PPT button for the new query
-            currentReportSummary = "";
-            currentReportTitle = userQuery; // Store title for PPT
-            pptBtn.disabled = true;
-            pptBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            pptBtn.classList.remove('bg-red-500');
-            pptBtnText.textContent = '📊 Export to PPT (Gen...)';
-
 
             try {
-                // Define the LLM's role for the main report
+                // Define the LLM's role and expected output format
                 const systemPrompt = `You are a Senior Commodity Analyst for BullBearJapan, Inc.. Your role is to provide a concise, data-grounded analysis of market scenarios.
 
                 Structure your response clearly using Markdown headings (starting with #####) for the following sections:
@@ -650,21 +535,13 @@
                 
                 When describing key points within a section, format them as: **Bold Label:** *Italic descriptive text*. This is essential for the front-end parser.
                 
-                Use LaTeX for all formulas, wrapped in $...$ for inline math and $$...$$ for display math. For example, use $\\times$ for multiplication.
+                When using the Crush Margin formula, please use the standard conversion factors based on the yield per bushel (e.g., 44 lbs of meal and 11 lbs of oil) and use clear variable names in your LaTeX.
 
                 The analysis must be grounded in the current information you search for. Maintain a professional, objective, and analytical tone.`;
 
-                // Note: The user's proxy seems to only want the prompt, not the full payload.
-                // We'll send the prompt as defined in their provided file.
-                // The system prompt and tools (grounding) must be handled *by their proxy*.
-                const payload = { 
-                    prompt: userQuery,
-                    // Assuming the user's proxy is hard-coded to add the system prompt and grounding.
-                    // If not, this structure would be needed:
-                    // contents: [{ parts: [{ text: userQuery }] }],
-                    // tools: [{ "google_search": {} }],
-                    // systemInstruction: { parts: [{ text: systemPrompt }] },
-                };
+                const payload = {
+  prompt: userQuery
+};
 
                 const result = await fetchWithRetry(payload);
 
@@ -676,7 +553,7 @@
                 if (candidate && candidate.content?.parts?.[0]?.text) {
                     generatedText = candidate.content.parts[0].text;
 
-                    // Extract grounding sources (if the proxy passes them back)
+                    // Extract grounding sources
                     const groundingMetadata = candidate.groundingMetadata;
                     if (groundingMetadata && groundingMetadata.groundingAttributions) {
                         sources = groundingMetadata.groundingAttributions
@@ -691,21 +568,10 @@
                 }
 
 
-                // 3. Update Results UI with Main Report
+                // 3. Update Results UI
                 const formattedHtml = markdownToHtml(generatedText);
                 analysisText.innerHTML = formattedHtml;
-
-                // 4. Render Math Formulas with KaTeX
-                // This finds all math delimiters and renders them
-                renderMathInElement(analysisText, {
-                    delimiters: [
-                        {left: "$$", right: "$$", display: true},
-                        {left: "$", right: "$", display: false}
-                    ],
-                    throwOnError: false // Prevents one bad formula from breaking the whole page
-                });
                 
-                // 5. Display Sources
                 if (sources.length > 0) {
                     sourcesDisplay.innerHTML = '<p class="font-bold mb-2">Sources:</p>';
                     sources.forEach((source, index) => {
@@ -715,28 +581,26 @@
                     sourcesDisplay.innerHTML = '<p class="text-gray-500">No external sources were used for this conceptual scenario.</p>';
                 }
                 
-                // 6. Set Date and show container
-                setPrintDate(); // Set date for both display and PDF
+                // Set the current date into the new report element
+                const now = new Date();
+                const dateString = now.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                reportDate.textContent = `Report Generated: ${dateString}`;
+
+
                 resultsContainer.classList.remove('hidden');
                 
-                // 7. Scroll to results
+                // Scroll to the results
                 resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                // 8. Start the (non-blocking) summary generation
-                fetchReportSummary(userQuery, generatedText);
 
             } catch (error) {
                 console.error("Scenario Analysis Error:", error);
-                let detail = "An unknown error occurred.";
-                if (error.message.includes("API key")) {
-                    detail = "API Key error. If deploying, ensure your key is set in the script.";
-                } else if (error.message.includes("connect")) {
-                    detail = "Network/Throttling Error: Could not connect to the API after retries. Check your console for details or try again shortly.";
-                }
-                errorMessage.textContent = detail;
                 errorMessage.classList.remove('hidden');
             } finally {
-                // 9. Hide loading state
+                // 4. Hide loading state
                 btnText.textContent = 'ANALYZE SCENARIO ✨';
                 loadingSpinner.classList.add('hidden');
                 submitBtn.disabled = false;
@@ -745,4 +609,3 @@
     </script>
 </body>
 </html>
-
