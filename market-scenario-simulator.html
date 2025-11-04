@@ -86,6 +86,19 @@
             font-weight: 800;
             color: #1f2937;
         }
+        /* Styling for the LaTeX formula block */
+        .formula-block {
+            background-color: #f3f4f6; /* Light gray background */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            font-family: monospace; /* Monospace font for code/formula */
+            white-space: pre-wrap;
+            overflow-x: auto;
+            color: #4f46e5; /* Primary blue for prominence */
+            font-weight: 600;
+        }
     </style>
     <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -216,6 +229,14 @@
             let html = markdownText.replace(/\r/g, '');
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
 
+            // --- FIX: Handle LaTeX Display Math $$...$$ by wrapping it in a styled block ---
+            // Use 'gs' (global, dotAll) to capture content across multiple lines
+            html = html.replace(/\$\$(.*?)\$\$/gs, (match, content) => {
+                // Wrap content in a styled div for visual separation and monospace font
+                return `<div class="formula-block">${content.trim()}</div>`;
+            });
+            // --------------------------------------------------------------------------
+
             // 2. Replace common directional/impact symbols with Unicode Emojis
             html = html.replace(/\\downarrow/g, '↓');      // LaTeX Down Arrow
             html = html.replace(/\\uparrow/g, '↑');        // LaTeX Up Arrow
@@ -253,11 +274,18 @@
                 // -----------------------------------------------------------------------
                 
                 let isSeparator = line.match(/^\|[\s:-]*\|[\s:-]*\|/); // Markdown table separator
+                
+                // Check if the line is already a processed formula block
+                let isFormulaBlock = line.startsWith('<div class="formula-block">');
+
 
                 // Handle closing any open blocks first if the new line breaks the block type
                 closeTags(isListLine, isTableLine);
-
-                if (isHeading) {
+                
+                if (isFormulaBlock) {
+                    // Do nothing, just pass the already-formatted block through
+                    outputHtml += line;
+                } else if (isHeading) {
                     // Extract the text content from the heading match
                     const headingText = headingMatch[2].trim();
                     // We consistently convert all Markdown headings to <h5> tags
@@ -430,6 +458,3 @@
     </script>
 </body>
 </html>
-
-
-
