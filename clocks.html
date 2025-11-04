@@ -6,74 +6,127 @@
     <title>Global Time Dashboard</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load SortableJS (for drag-and-drop) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <!-- Load Lucide icons bundle (creates global 'lucide' object) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
     <style>
         /* Custom styles for a light, professional theme */
         body {
             font-family: 'Inter', sans-serif;
-            /* UPDATED: Changed to #f9f9f9 (a very light, off-white gray) */
-            background-color: #f9f9f9; 
+            background-color: #f8fafc; /* Light gray background (Tailwind gray-50) */
             color: #1f2937; /* Dark text (Tailwind gray-800) */
             min-height: 100vh;
         }
         .time-card {
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.5s;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            /* Make it explicitly draggable */
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Crucial for better mobile drag experience */
         }
         .time-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+        /* Style when dragging starts */
+        .sortable-ghost {
+            opacity: 0.5;
+            background-color: #f0f4ff; /* Light blue placeholder */
+        }
+        
+        /* SortableJS custom classes */
+        .chosen-clock {
+            background-color: rgba(220, 230, 255, 0.7) !important; /* Light Blue */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border-color: #3b82f6 !important;
+        }
+        .drag-clock {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
         .time-display {
-            /* Aggressively reduced clamp range for maximum compactness */
             font-size: clamp(1rem, 2vw, 1.5rem); 
             font-weight: 700;
-            /* Default color for time (Day Mode) */
-            color: #1d4ed8; /* Strong blue accent (Tailwind blue-700) */
+            color: #1d4ed8; 
             text-shadow: 0 0 5px rgba(29, 78, 216, 0.1);
         }
         .date-display {
-            /* Default color for date (Day Mode) */
-            color: #6b7280; /* Subtle date color (Tailwind gray-500) */
-            font-size: 0.75rem; /* text-xs equivalent */
+            color: #6b7280; 
+            font-size: 0.75rem; 
         }
-        /* Style for the flag and city name containers */
         .city-header {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
         
-        /* --- New Custom Grid Class for Fluid Layout --- */
-        .fluid-grid {
-            /* Use CSS Grid with auto-fit for dynamic column creation */
+        /* Main Clock Grid Class for Drag-and-Drop (Fluid/Stretched Layout) */
+        #draggable-clock-grid {
             display: grid;
-            gap: 0.75rem; /* Reduced gap from 1rem to 0.75rem */
-            
-            /* Columns only take the minimum content width, allowing the grid block to be centered */
-            grid-template-columns: repeat(auto-fit, minmax(190px, min-content));
-
-            /* Center the entire set of grid items within the container (this works now) */
-            justify-content: center; 
-        }
-
-        /* --- New Custom Class for Centering the Separators --- */
-        /* This wrapper ensures the separator line spans the full width and the content inside is centered */
-        .continent-group-wrapper {
-            width: 100%; /* Take full width of the main container */
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            display: flex; /* Use flex to center the header line */
-            flex-direction: column;
-            align-items: center; /* Center the header element horizontally */
+            gap: 0.75rem; 
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); 
+            justify-content: start; 
+            padding: 0 0.5rem; 
         }
         
-        /* Style for the actual separator line */
-        .continent-separator {
-            width: 100%; /* Set to 100% for full length */
-            padding-top: 0.5rem;
-            text-align: center;
-            /* Center text within the limited width of the H2 */
-            margin: 0 auto; 
+        /* Style for the special LOCAL and UTC cards */
+        .special-card {
+            border-color: #ef4444; 
+            background-color: #fee2e2; 
+            /* Set a fixed max width so they don't stretch in the flex container */
+            max-width: 300px;
+            width: 100%; 
+        }
+        
+        .night-special-card {
+            border-color: #b91c1c; 
+            background: linear-gradient(to bottom right, #450a0a, #7f1d1d) !important; 
+        }
+        .night-special-card .text-white {
+            color: white !important;
+        }
+        .night-special-card .text-red-300 {
+            color: #fca5a5 !important;
+        }
+
+        /* Modal specific styling */
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .modal.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .modal.hidden .modal-content {
+            transform: translateY(-50px);
+        }
+        
+        /* Tailwind Toggle Switch custom classes */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        .peer:checked + div {
+            background-color: #4f46e5; /* indigo-600 */
+        }
+        .peer:checked + div:after {
+            transform: translateX(100%);
+            border-color: white;
         }
 
     </style>
@@ -90,62 +143,451 @@
         }
     </script>
 </head>
-<!-- Reduced overall page padding -->
 <body class="p-3 md:p-6">
 
-    <!-- Reduced header size and margin for compactness -->
     <header class="text-center mb-5">
         <h1 class="text-3xl font-extrabold text-gray-900 mb-0.5">
             Global Time Zones
         </h1>
-        <p class="text-base text-gray-500">Live Clocks around the World</p>
+        <p class="text-base text-gray-500">Drag & Drop to Organize Your Clocks</p>
     </header>
+    
+    <!-- AM/PM Toggle Switch -->
+    <div class="flex justify-center mb-6">
+        <div class="flex items-center space-x-3 p-2 bg-white rounded-xl shadow-md border border-gray-100">
+            <span class="text-sm font-semibold text-gray-500">24-Hour</span>
+            
+            <!-- Toggle Switch HTML -->
+            <label for="time-format-toggle" class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="time-format-toggle" class="sr-only peer" onclick="toggleTimeFormat()">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            </label>
+            
+            <span class="text-sm font-semibold text-indigo-600">AM/PM</span>
+        </div>
+    </div>
+
 
     <main id="time-grid" class="max-w-7xl mx-auto">
-        <!-- Placeholder. The content will replace this element's inner HTML -->
+        
+        <!-- SPECIAL CLOCKS SECTION: Uses FLEX for guaranteed centering -->
+        <div id="special-clocks-section" class="flex flex-wrap justify-center gap-3 mb-6">
+            <!-- Special clocks will be inserted here -->
+        </div>
+
+        <!-- MAIN SORTABLE CONTAINER -->
+        <h2 class="text-xl font-bold text-gray-700 mb-3 text-center">Selected Cities</h2>
+        <div id="draggable-clock-grid" class="max-w-7xl mx-auto mb-6">
+            <!-- Draggable clocks will be inserted here -->
+        </div>
+        
+        <!-- ADD CITY BUTTON -->
+        <div class="flex justify-center mt-8">
+            <button id="add-city-btn" 
+                    onclick="openAddCityModal()"
+                    class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition duration-200">
+                <!-- Plus icon using SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                <span>Add New City Clock</span>
+            </button>
+        </div>
     </main>
 
+    <!-- CITY SELECTION MODAL -->
+    <div id="add-city-modal" class="modal hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4" onclick="closeAddCityModal(event)">
+        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-bold text-gray-800">Select a Time Zone</h3>
+                <button onclick="closeAddCityModal()" class="text-gray-500 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100">
+                    <svg data-lucide="x" class="w-6 h-6"></svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-4">
+                 <!-- Limit Message -->
+                <div id="limit-message" class="hidden p-3 mb-4 text-sm text-red-800 rounded-lg bg-red-50" role="alert">
+                    <span class="font-medium">Limit Reached!</span> You have reached the maximum of <span id="max-clocks-display"></span> custom clocks. Please remove one to add another.
+                </div>
+                
+                <input type="text" id="city-search" placeholder="Search city or time zone..." 
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4" 
+                       oninput="filterCities(this.value)">
+                
+                <div id="city-list" class="h-80 overflow-y-scroll space-y-2">
+                    <!-- Cities will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="p-4 border-t text-right">
+                <button onclick="closeAddCityModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-150">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Data for the cities
-        const timeZones = [
+        // --- Configuration Constants ---
+        const STORAGE_KEY = 'userClocksList';
+        const MAX_CLOCKS = 25; // The new hard limit requested by the user.
+        
+        // State for time format preference (false = 24h, true = 12h)
+        let is12HourFormat = false; 
+
+        // --- Data Definitions ---
+
+        // Initial default list of zones (only used if localStorage is empty)
+        const DEFAULT_ZONES = [
             { id: 'tokyo', city: 'Tokyo', zone: 'Asia/Tokyo', country: 'Japan', continent: 'Asia' },
-            { id: 'bangkok', city: 'Bangkok', zone: 'Asia/Bangkok', country: 'Thailand', continent: 'Asia' },
+            { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
+            { id: 'new-york', city: 'New York', zone: 'America/New_York', country: 'USA', continent: 'Americas' },
+            { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
             { id: 'dubai', city: 'Dubai', zone: 'Asia/Dubai', country: 'UAE', continent: 'Asia' },
+            { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
+        ];
+        
+        // Special time zones (always displayed, non-draggable, non-deletable)
+        const specialTimeZones = [
+            { id: 'local', city: 'MY TIME', zone: Intl.DateTimeFormat().resolvedOptions().timeZone, country: 'Local', isSpecial: true, flagIcon: '🏠' },
+            { id: 'utc', city: 'UTC / Zulu', zone: 'UTC', country: 'Global', isSpecial: true, flagIcon: '🌐' }
+        ];
+
+        // Large list of cities available for selection (EXPANDED LIST)
+        const allSelectableTimeZones = [
+            // Existing Cities
+            { id: 'tokyo', city: 'Tokyo', zone: 'Asia/Tokyo', country: 'Japan', continent: 'Asia' },
+            { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
+            { id: 'new-york', city: 'New York', zone: 'America/New_York', country: 'USA', continent: 'Americas' },
+            { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
+            { id: 'dubai', city: 'Dubai', zone: 'Asia/Dubai', country: 'UAE', continent: 'Asia' },
+            { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
+            { id: 'bangkok', city: 'Bangkok', zone: 'Asia/Bangkok', country: 'Thailand', continent: 'Asia' },
             { id: 'singapore', city: 'Singapore', zone: 'Asia/Singapore', country: 'Singapore', continent: 'Asia' },
-            { id: 'delhi', city: 'Delhi', zone: 'Asia/Kolkata', country: 'India', continent: 'Asia' },
+            { id: 'delhi', city: 'New Delhi', zone: 'Asia/Kolkata', country: 'India', continent: 'Asia' },
             { id: 'moscow', city: 'Moscow', zone: 'Europe/Moscow', country: 'Russia', continent: 'Europe' },
             { id: 'cairo', city: 'Cairo', zone: 'Africa/Cairo', country: 'Egypt', continent: 'Africa' },
             { id: 'casablanca', city: 'Casablanca', zone: 'Africa/Casablanca', country: 'Morocco', continent: 'Africa' },
-            { id: 'abidjan', city: 'Abidjan', zone: 'Africa/Abidjan', country: "Côte d'Ivoire", continent: 'Africa' }, 
-            { id: 'nairobi', city: 'Nairobi', zone: 'Africa/Nairobi', country: 'Kenya', continent: 'Africa' },
             { id: 'johannesburg', city: 'Johannesburg', zone: 'Africa/Johannesburg', country: 'South Africa', continent: 'Africa' },
-            { id: 'paris', city: 'Paris', zone: 'Europe/Paris', country: 'France', continent: 'Europe' },
-            { id: 'lisboa', city: 'Lisboa', zone: 'Europe/Lisbon', country: 'Portugal', continent: 'Europe' }, 
+            { id: 'lisboa', city: 'Lisbon', zone: 'Europe/Lisbon', country: 'Portugal', continent: 'Europe' }, 
             { id: 'zurich', city: 'Zurich', zone: 'Europe/Zurich', country: 'Switzerland', continent: 'Europe' }, 
-            { id: 'london', city: 'London', zone: 'Europe/London', country: 'UK', continent: 'Europe' },
-            { id: 'sao-paulo', city: 'Sao Paulo', zone: 'America/Sao_Paulo', country: 'Brazil', continent: 'Americas' },
+            { id: 'sao-paulo', city: 'São Paulo', zone: 'America/Sao_Paulo', country: 'Brazil', continent: 'Americas' },
             { id: 'chicago', city: 'Chicago', zone: 'America/Chicago', country: 'USA', continent: 'Americas' }, 
-            { id: 'new-york', city: 'New York', zone: 'America/New_York', country: 'USA', continent: 'Americas' },
             { id: 'vancouver', city: 'Vancouver', zone: 'America/Vancouver', country: 'Canada', continent: 'Americas' },
             { id: 'los-angeles', city: 'Los Angeles', zone: 'America/Los_Angeles', country: 'USA', continent: 'Americas' },
             { id: 'honolulu', city: 'Honolulu', zone: 'Pacific/Honolulu', country: 'USA', continent: 'Oceania & Pacific' },
-            { id: 'guam', city: 'Guam', zone: 'Pacific/Guam', country: 'USA', continent: 'Oceania & Pacific' },
-            { id: 'sydney', city: 'Sydney', zone: 'Australia/Sydney', country: 'Australia', continent: 'Oceania & Pacific' },
-            { id: 'perth', city: 'Perth', zone: 'Australia/Perth', country: 'Australia', continent: 'Oceania & Pacific' },
             { id: 'auckland', city: 'Auckland', zone: 'Pacific/Auckland', country: 'New Zealand', continent: 'Oceania & Pacific' },
+            { id: 'seoul', city: 'Seoul', zone: 'Asia/Seoul', country: 'South Korea', continent: 'Asia' },
+            { id: 'shanghai', city: 'Shanghai', zone: 'Asia/Shanghai', country: 'China', continent: 'Asia' },
+            { id: 'berlin', city: 'Berlin', zone: 'Europe/Berlin', country: 'Germany', continent: 'Europe' },
+            { id: 'mexico-city', city: 'Mexico City', zone: 'America/Mexico_City', country: 'Mexico', continent: 'Americas' },
+            { id: 'buenos-aires', city: 'Buenos Aires', zone: 'America/Argentina/Buenos_Aires', country: 'Argentina', continent: 'Americas' },
+            { id: 'riyadh', city: 'Riyadh', zone: 'Asia/Riyadh', country: 'Saudi Arabia', continent: 'Asia' },
+            { id: 'stockholm', city: 'Stockholm', zone: 'Europe/Stockholm', country: 'Sweden', continent: 'Europe' },
+            { id: 'hanoi', city: 'Hanoi', zone: 'Asia/Ho_Chi_Minh', country: 'Vietnam', continent: 'Asia' },
+
+            // --- NEW EXPANDED LIST ADDITIONS ---
+            { id: 'lagos', city: 'Lagos', zone: 'Africa/Lagos', country: 'Nigeria', continent: 'Africa' },
+            { id: 'lima', city: 'Lima', zone: 'America/Lima', country: 'Peru', continent: 'Americas' },
+            { id: 'bogota', city: 'Bogota', zone: 'America/Bogota', country: 'Colombia', continent: 'Americas' },
+            { id: 'istanbul', city: 'Istanbul', zone: 'Europe/Istanbul', country: 'Turkey', continent: 'Europe/Asia' },
+            { id: 'jakarta', city: 'Jakarta', zone: 'Asia/Jakarta', country: 'Indonesia', continent: 'Asia' },
+            { id: 'dhaka', city: 'Dhaka', zone: 'Asia/Dhaka', country: 'Bangladesh', continent: 'Asia' },
+            { id: 'karachi', city: 'Karachi', zone: 'Asia/Karachi', country: 'Pakistan', continent: 'Asia' },
+            { id: 'taipei', city: 'Taipei', zone: 'Asia/Taipei', country: 'Taiwan', continent: 'Asia' },
+            { id: 'oslo', city: 'Oslo', zone: 'Europe/Oslo', country: 'Norway', continent: 'Europe' },
+            { id: 'helsinki', city: 'Helsinki', zone: 'Europe/Helsinki', country: 'Finland', continent: 'Europe' },
+            { id: 'vienna', city: 'Vienna', zone: 'Europe/Vienna', country: 'Austria', continent: 'Europe' },
+            { id: 'athens', city: 'Athens', zone: 'Europe/Athens', country: 'Greece', continent: 'Europe' },
+            { id: 'dublin', city: 'Dublin', zone: 'Europe/Dublin', country: 'Ireland', continent: 'Europe' },
+            { id: 'reykjavik', city: 'Reykjavik', zone: 'Atlantic/Reykjavik', country: 'Iceland', continent: 'Europe' },
+            { id: 'santiago', city: 'Santiago', zone: 'America/Santiago', country: 'Chile', continent: 'Americas' },
+            { id: 'denver', city: 'Denver', zone: 'America/Denver', country: 'USA', continent: 'Americas' },
+            { id: 'phoenix', city: 'Phoenix', zone: 'America/Phoenix', country: 'USA', continent: 'Americas' },
+            { id: 'perth', city: 'Perth', zone: 'Australia/Perth', country: 'Australia', continent: 'Oceania & Pacific' },
+            { id: 'cuba', city: 'Havana', zone: 'America/Havana', country: 'Cuba', continent: 'Americas' },
+            { id: 'oman', city: 'Muscat', zone: 'Asia/Muscat', country: 'Oman', continent: 'Asia' }
         ];
 
-        // --- Flag and Time Calculation Helper Functions ---
+        // Map for quick lookup of city data
+        const allSelectableTimeZonesMap = new Map(allSelectableTimeZones.map(zone => [zone.id, zone]));
+
+        // Global variable to hold the currently rendered list of zones (excluding special ones)
+        let userClocksList = [];
+        // Global variable to hold all clock elements for the update loop
+        let allCardElements = [];
+
+        // --- Time Format Preference Functions ---
+
+        /**
+         * Loads the time format (12h or 24h) from localStorage.
+         */
+        function loadTimeFormatPreference() {
+            const savedFormat = localStorage.getItem('timeFormatPreference');
+            // Default is 24-hour (false), unless saved preference is '12h'
+            is12HourFormat = savedFormat === '12h';
+        }
+
+        /**
+         * Saves the current time format preference to localStorage.
+         */
+        function saveTimeFormatPreference() {
+            localStorage.setItem('timeFormatPreference', is12HourFormat ? '12h' : '24h');
+        }
+
+        /**
+         * Toggles the time display format (12h/24h) and updates all clocks.
+         */
+        function toggleTimeFormat() {
+            is12HourFormat = !is12HourFormat;
+            saveTimeFormatPreference();
+            
+            // Immediately update all clocks to reflect the change
+            allCardElements.forEach(item => {
+                updateTime(item.zone, item.card);
+            });
+        }
+
+        // --- Core Persistence and Rendering ---
+
+        /**
+         * Loads the user's custom clock list from localStorage or uses defaults.
+         * @returns {Array} The zones array to display in the draggable grid.
+         */
+        function loadUserClockList() {
+            const savedList = localStorage.getItem(STORAGE_KEY);
+            if (!savedList) {
+                // If no saved list, use defaults.
+                return DEFAULT_ZONES.map(zone => ({
+                    ...zone,
+                    offsetMinutes: getOffsetMinutes(zone.zone)
+                })).sort((a, b) => b.offsetMinutes - a.offsetMinutes);
+            }
+
+            const savedIds = JSON.parse(savedList);
+            
+            // Reconstruct the list using the ID order and the lookup map
+            return savedIds
+                .map(id => allSelectableTimeZonesMap.get(id))
+                .filter(zone => zone); // Remove any IDs that might no longer exist in the map
+        }
+
+        /**
+         * Saves the current list of clocks (by ID) to localStorage.
+         */
+        function saveUserClockList() {
+            const currentOrderIds = userClocksList.map(zone => zone.id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentOrderIds));
+        }
+
+        /**
+         * Renders all special and draggable clocks from the current lists.
+         */
+        function renderClocks() {
+            const specialClocksContainer = document.getElementById('special-clocks-section');
+            const draggableClockGrid = document.getElementById('draggable-clock-grid');
+            
+            if (!specialClocksContainer || !draggableClockGrid) return; 
+
+            // Clear containers and update loop list
+            specialClocksContainer.innerHTML = '';
+            draggableClockGrid.innerHTML = '';
+            allCardElements = [];
+
+            // 1. Setup Special Clocks (MY TIME and UTC) (Non-Draggable)
+            specialTimeZones.forEach(zone => {
+                const card = createTimeCard(zone);
+                specialClocksContainer.appendChild(card);
+                allCardElements.push({ card, zone }); 
+            });
+
+            // 2. Render Draggable Clocks
+            userClocksList.forEach(zone => {
+                const card = createTimeCard(zone);
+                draggableClockGrid.appendChild(card);
+                allCardElements.push({ card, zone }); 
+            });
+            
+            // 3. Update all times immediately
+            allCardElements.forEach(item => {
+                updateTime(item.zone, item.card);
+            });
+            
+            // 4. Re-apply Lucide icons after DOM manipulation
+            if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+                 lucide.createIcons();
+            }
+        }
+
+
+        // --- UI Functions (Add/Delete/Modal) ---
+        
+        /**
+         * Adds a selected city to the userClocksList and re-renders/saves.
+         * @param {string} id - The ID of the city to add.
+         */
+        function addCityClock(id) {
+            if (userClocksList.length >= MAX_CLOCKS) {
+                console.warn(`Cannot add clock: maximum of ${MAX_CLOCKS} reached.`);
+                closeAddCityModal();
+                return; 
+            }
+
+            const newZone = allSelectableTimeZonesMap.get(id);
+            if (newZone && !userClocksList.some(z => z.id === id)) {
+                userClocksList.push(newZone);
+                saveUserClockList();
+                renderClocks();
+                closeAddCityModal();
+            }
+        }
+
+        /**
+         * Deletes a city clock card.
+         * @param {string} id - The ID of the city to delete.
+         */
+        function deleteClockCard(id) {
+            // Remove the zone from the global list
+            userClocksList = userClocksList.filter(z => z.id !== id);
+            
+            // Remove the element from the DOM
+            const cardElement = document.getElementById(`card-${id}`);
+            if (cardElement) {
+                cardElement.remove();
+            }
+
+            // Save the new list and re-render the time update loop references
+            saveUserClockList();
+            renderClocks(); // Calling renderClocks also resets allCardElements for the update loop
+        }
+
+        /**
+         * Opens the modal and populates the city list, checking the clock limit.
+         */
+        function openAddCityModal() {
+            const modal = document.getElementById('add-city-modal');
+            const searchInput = document.getElementById('city-search');
+            const limitMessage = document.getElementById('limit-message');
+            const maxClocksDisplay = document.getElementById('max-clocks-display');
+
+            const isLimitReached = userClocksList.length >= MAX_CLOCKS;
+            
+            if (maxClocksDisplay) {
+                maxClocksDisplay.textContent = MAX_CLOCKS;
+            }
+
+            // Toggle visibility and state based on limit
+            if (isLimitReached) {
+                limitMessage.classList.remove('hidden');
+                searchInput.setAttribute('disabled', 'true');
+                searchInput.value = '';
+                searchInput.placeholder = 'Clock limit reached (' + MAX_CLOCKS + ')';
+                populateCityList([]); // Show empty list when limit is hit
+            } else {
+                limitMessage.classList.add('hidden');
+                searchInput.removeAttribute('disabled');
+                searchInput.placeholder = 'Search city or time zone...';
+                populateCityList(allSelectableTimeZones);
+                searchInput.value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        /**
+         * Closes the modal.
+         * @param {Event} event - Optional click event to check for backdrop click.
+         */
+        function closeAddCityModal(event) {
+            // Only close if the click was on the backdrop or the close button
+            if (event && event.target.id === 'add-city-modal') {
+                document.getElementById('add-city-modal').classList.add('hidden');
+                return;
+            }
+            if (!event || event.target.id !== 'add-city-modal') {
+                 document.getElementById('add-city-modal').classList.add('hidden');
+            }
+        }
+
+        /**
+         * Populates the city selection list in the modal.
+         * @param {Array} zones - The array of zones to display.
+         */
+        function populateCityList(zones) {
+            const listContainer = document.getElementById('city-list');
+            listContainer.innerHTML = '';
+            
+            const existingIds = new Set(userClocksList.map(z => z.id));
+            const isLimitReached = userClocksList.length >= MAX_CLOCKS;
+
+
+            zones.forEach(zone => {
+                const isExisting = existingIds.has(zone.id);
+                const isDisabled = isExisting || isLimitReached;
+                
+                const cityItem = document.createElement('button');
+                cityItem.className = `w-full text-left p-3 rounded-lg flex justify-between items-center transition duration-150 ${
+                    isDisabled 
+                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                        : 'bg-white hover:bg-indigo-50 hover:ring-2 hover:ring-indigo-100'
+                }`;
+                
+                cityItem.innerHTML = `
+                    <div>
+                        <span class="font-medium ${isDisabled ? 'text-gray-500' : 'text-gray-800'}">${zone.city}, ${zone.country}</span>
+                        <span class="text-xs text-gray-400 block">${zone.zone}</span>
+                    </div>
+                    <span class="font-bold text-sm ${isDisabled ? 'text-gray-400' : 'text-indigo-600'}">
+                        ${isExisting ? 'ADDED' : (isLimitReached ? 'LIMIT' : 'ADD')}
+                    </span>
+                `;
+                
+                if (!isDisabled) {
+                    cityItem.onclick = () => addCityClock(zone.id);
+                } else {
+                    cityItem.setAttribute('disabled', 'true');
+                }
+                
+                listContainer.appendChild(cityItem);
+            });
+
+            if (zones.length === 0 && !isLimitReached) {
+                 listContainer.innerHTML = '<p class="text-center text-gray-500 pt-10">No cities found matching your search.</p>';
+            }
+        }
+
+        /**
+         * Filters the city list in the modal based on search input.
+         * @param {string} searchTerm - The user's input.
+         */
+        function filterCities(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const filtered = allSelectableTimeZones.filter(zone => 
+                zone.city.toLowerCase().includes(term) || 
+                zone.country.toLowerCase().includes(term) ||
+                zone.zone.toLowerCase().includes(term)
+            );
+            populateCityList(filtered);
+        }
+
+        // --- Utility Functions ---
 
         function getCountryCode(country) {
             const codes = {
                 'UK': 'GB', 'France': 'FR', 'Portugal': 'PT', 'Switzerland': 'CH',
-                'Egypt': 'EG', 'Kenya': 'KE', 'South Africa': 'ZA', 'Russia': 'RU',
-                "Côte d'Ivoire": 'CI', 
+                'Egypt': 'EG', 'Morocco': 'MA', 'South Africa': 'ZA', 'Russia': 'RU',
                 'Japan': 'JP', 'Thailand': 'TH', 'UAE': 'AE', 'Singapore': 'SG', 'India': 'IN',
-                'Australia': 'AU', 'New Zealand': 'NZ', 
-                'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR',
-                'Morocco': 'MA'
+                'Australia': 'AU', 'New Zealand': 'NZ', 'South Korea': 'KR', 'China': 'CN', 
+                'Germany': 'DE', 'Saudi Arabia': 'SA', 'Sweden': 'SE', 'Vietnam': 'VN',
+                'USA': 'US', 'Canada': 'CA', 'Brazil': 'BR', 'Mexico': 'MX', 'Argentina': 'AR',
+                
+                // New Codes
+                'Nigeria': 'NG', 'Peru': 'PE', 'Colombia': 'CO', 'Turkey': 'TR', 'Indonesia': 'ID',
+                'Bangladesh': 'BD', 'Pakistan': 'PK', 'Taiwan': 'TW', 'Norway': 'NO', 'Finland': 'FI',
+                'Austria': 'AT', 'Greece': 'GR', 'Ireland': 'IE', 'Iceland': 'IS', 'Chile': 'CL',
+                'Cuba': 'CU', 'Oman': 'OM'
             };
             return codes[country] || '';
         }
@@ -163,262 +605,229 @@
                 const local = localTimeInZone.getTime();
                 return (local - utc) / 60000;
             } catch (e) {
-                console.error(`Error calculating offset for ${zone}:`, e);
-                return 0; // Fallback
+                return 0; 
             }
         }
 
-        // New function to determine subtle gradient classes based on the hour
         function getCardGradientClasses(hour) {
-            // Day (7:00 AM to 5:59 PM): Light Blueish
             if (hour >= 7 && hour < 18) {
                 return 'bg-gradient-to-br from-white to-sky-100/70';
             } 
-            // Dusk (6:00 PM to 7:59 PM): Soft Pink Orange transition
             else if (hour >= 18 && hour < 20) {
                 return 'bg-gradient-to-br from-pink-100/70 to-orange-100/70';
             } 
-            // Night (8:00 PM to 4:59 AM): Darker Navy/Indigo
             else if (hour >= 20 || hour < 5) {
-                // Using a strong blue-900 (navy) to a dark slate-900 
-                return 'bg-gradient-to-br from-blue-900/80 to-slate-900/90';
+                return 'bg-gradient-to-br from-indigo-900/80 to-blue-900/80';
             } 
-            // Dawn (5:00 AM to 6:59 AM): Transition to light
             else if (hour >= 5 && hour < 7) {
                 return 'bg-gradient-to-br from-yellow-50/70 to-orange-100/70';
             }
-            return 'bg-white'; // Fallback
+            return 'bg-white';
         }
 
-        // Function to create the HTML element for a time card
+
+        // --- Card Creation and Update ---
+
         function createTimeCard(zoneData) {
             const countryCode = getCountryCode(zoneData.country);
             const flagImageUrl = getFlagImageUrl(countryCode);
+            
+            let baseClasses = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
+            
+            if (zoneData.isSpecial) {
+                baseClasses += ' special-card'; 
+            }
 
             const card = document.createElement('div');
             card.id = `card-${zoneData.id}`;
-            // Use time-card base class, gradient classes will be applied in updateTime
-            card.className = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
+            card.setAttribute('data-id', zoneData.id); 
+            card.setAttribute('data-zone', zoneData.zone);
+            card.className = baseClasses; 
             
-            // The main wrapper is now full width, uses flex for centering its content (items-center)
-            card.innerHTML = `
-                <!-- Card Content (z-index 10 to ensure it's above the potential background) -->
-                <div class="relative z-10 w-full flex flex-col items-center">
-                    <!-- City Header: Uses justify-center to center the flag and name -->
-                    <div class="city-header mb-0.5 justify-center">
-                        <!-- Flag Image: Removed border classes for a cleaner look -->
-                        <img src="${flagImageUrl}" alt="${zoneData.country} Flag" 
+            let flagHtml = '';
+            let cityTextClasses = 'text-lg font-bold text-gray-800';
+
+            if (zoneData.isSpecial) {
+                flagHtml = `<span class="text-xl">${zoneData.flagIcon}</span>`;
+                cityTextClasses = 'text-lg font-bold text-red-600'; 
+            } else {
+                flagHtml = `<img src="${flagImageUrl}" alt="${zoneData.country} Flag" 
                             class="w-7 h-auto rounded shadow-md" 
-                            onerror="this.style.display='none';"> 
-                            
-                        <!-- City name -->
-                        <h2 class="text-lg font-bold text-gray-800">${zoneData.city}</h2>
+                            onerror="this.style.display='none';">`;
+            }
+
+            // DELETE BUTTON (Only for non-special cards)
+            let deleteButton = '';
+            if (!zoneData.isSpecial) {
+                deleteButton = `
+                    <button class="absolute top-1 right-1 p-1.5 z-20 cursor-pointer rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition" 
+                            onclick="deleteClockCard('${zoneData.id}'); event.stopPropagation();"
+                            title="Remove clock">
+                        <svg data-lucide="x" class="w-4 h-4"></svg>
+                    </button>
+                `;
+            }
+
+
+            card.innerHTML = `
+                ${deleteButton}
+                <!-- Card Content (z-index 10 to ensure it's above the potential background) -->
+                <div class="relative z-10 w-full flex flex-col items-center pt-2">
+                    <div class="city-header mb-0.5 justify-center">
+                        ${flagHtml} 
+                        <h2 class="${cityTextClasses}">${zoneData.city}</h2>
                     </div>
                 </div>
                 
                 <!-- Time/Date Footer -->
-                <div class="relative z-10 w-full">
+                <div class="relative z-10 w-full pb-1">
                     <div class="flex items-center justify-center space-x-1 mb-0.5">
-                        <!-- DST indicator aligned horizontally with time -->
-                        <span id="dst-indicator-${zoneData.id}" class="text-xs text-blue-600 font-extrabold hidden px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300" title="Daylight Saving Time is Active">DST</span> 
+                        <span id="dst-indicator-${zoneData.id}" 
+                              class="text-xs font-extrabold hidden px-1 py-0.5 rounded-full" 
+                              title="Daylight Saving Time is Active"></span> 
                         
-                        <!-- Time display, now smaller -->
                         <div id="time-${zoneData.id}" class="time-display">--:--:--</div>
                     </div>
-                    <!-- Date display, now smaller (text-xs) -->
                     <div id="date-${zoneData.id}" class="date-display text-xs text-center">--/--/----</div>
+                    
+                    ${zoneData.isSpecial ? `<div id="offset-${zoneData.id}" class="text-xs text-center text-red-500 font-medium mt-1"></div>` : ''}
                 </div>
             `;
             return card;
         }
 
-        // Function to update the time and apply background gradient for a specific zone
-        // FIX: Now accepts the cardElement directly to prevent null querySelector calls.
         function updateTime(zoneData, cardElement) {
             const now = new Date();
 
-            // 1. Get Time/Date Strings
+            // Use the global state for 12-hour format preference
             const timeOptions = { 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: zoneData.zone 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: is12HourFormat, // Toggles between 24h and AM/PM
+                timeZone: zoneData.zone 
             };
-            
-            const dateOptions = {
-                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: zoneData.zone
-            };
+            const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: zoneData.zone };
 
             const timeString = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
             const dateString = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
 
-            // 2. Determine hour and gradient
-            const hour = parseInt(new Intl.DateTimeFormat('en-US', { 
-                hour: 'numeric', hour12: false, timeZone: zoneData.zone 
-            }).format(now), 10);
-
+            const hour = parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: zoneData.zone }).format(now), 10);
             const gradientClasses = getCardGradientClasses(hour);
-
-            // Determine if it's night (uses the same hours as the dark gradient)
             const isNight = hour >= 20 || hour < 5;
+            let isDST = false;
 
-            // 3. Determine DST status
-            const longTimeZoneName = new Intl.DateTimeFormat('en-US', {
-                timeZone: zoneData.zone,
-                timeZoneName: 'long'
-            }).format(now);
-            
-            const isDST = longTimeZoneName.includes('Daylight') || longTimeZoneName.includes('Summer');
-
-            // 4. Update DOM elements using querySelector on the provided cardElement
+            if (zoneData.id !== 'utc') {
+                try {
+                    const longTimeZoneName = new Intl.DateTimeFormat('en-US', { timeZone: zoneData.zone, timeZoneName: 'long' }).format(now);
+                    isDST = longTimeZoneName.includes('Daylight') || longTimeZoneName.includes('Summer');
+                } catch (e) { /* silent fail */ }
+            }
             
             const timeElement = cardElement.querySelector(`#time-${zoneData.id}`);
             const dateElement = cardElement.querySelector(`#date-${zoneData.id}`);
             const dstElement = cardElement.querySelector(`#dst-indicator-${zoneData.id}`);
-            
-            // Get inner elements for dynamic color changes
-            // FIX: Use querySelector on the cardElement to find child elements
             const cityNameElement = cardElement.querySelector('h2'); 
-            const flagImageElement = cardElement.querySelector('img'); 
+            const offsetElement = cardElement.querySelector(`#offset-${zoneData.id}`);
 
-
-            // Conditional Styling based on Day/Night
+            // Apply styling based on Day/Night status
+            let baseClasses = 'time-card p-2 rounded-xl border flex flex-col justify-between relative';
+            let cardClasses = zoneData.isSpecial ? `${baseClasses} special-card` : `${baseClasses} border-blue-300/50 ${gradientClasses}`;
+            
             if (isNight) {
-                // --- NIGHT MODE STYLES (White/Light Blue text on Dark Background) ---
-                
-                // City Name: White
+                cardClasses += zoneData.isSpecial ? ' night-special-card' : ' bg-gradient-to-br from-indigo-900/80 to-blue-900/80';
                 cityNameElement.className = 'text-lg font-bold text-white'; 
-                
-                // Flag: No border, retains shadow
-                flagImageElement.className = 'w-7 h-auto rounded shadow-md'; 
-
-                // Time: Light Blue (Tailwind blue-200 equivalent)
-                timeElement.style.color = 'rgb(191, 219, 254)'; 
-                
-                // Date: Light Blue
-                dateElement.className = 'date-display text-xs text-blue-200 text-center'; 
-
-                // DST Badge: White/Transparent background
-                dstElement.className = 'text-xs text-white font-extrabold px-1 py-0.5 rounded-full bg-white/30 border border-white/50';
+                if (timeElement) timeElement.style.color = zoneData.isSpecial ? 'rgb(252, 165, 165)' : 'rgb(191, 219, 254)'; 
+                dateElement.className = `date-display text-xs text-center ${zoneData.isSpecial ? 'text-red-300' : 'text-blue-200'}`; 
+                if (dstElement) dstElement.className = 'text-xs text-white font-extrabold px-1 py-0.5 rounded-full bg-white/30 border border-white/50';
+                if(offsetElement) offsetElement.className = `text-xs text-center font-medium mt-1 ${zoneData.isSpecial ? 'text-red-300' : 'text-blue-200'}`;
             } else {
-                // --- DAY MODE STYLES (Revert to original dark colors) ---
-                
-                // City Name: Dark Gray
-                cityNameElement.className = 'text-lg font-bold text-gray-800';
-                
-                // Flag: No border, retains shadow
-                flagImageElement.className = 'w-7 h-auto rounded shadow-md';
-
-                // Time: Strong Blue (revert to CSS default)
-                timeElement.style.color = ''; 
-                
-                // Date: Subtle Gray
-                dateElement.className = 'date-display text-xs text-center'; 
-
-                // DST Badge: Blue
-                dstElement.className = 'text-xs text-blue-600 font-extrabold px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300';
+                cardClasses += zoneData.isSpecial ? ' border-red-500/70 bg-red-50/70' : '';
+                cityNameElement.className = zoneData.isSpecial ? 'text-lg font-bold text-red-600' : 'text-lg font-bold text-gray-800'; 
+                if (timeElement) timeElement.style.color = zoneData.isSpecial ? 'rgb(220, 38, 38)' : 'rgb(29, 78, 216)';
+                dateElement.className = `date-display text-xs text-center ${zoneData.isSpecial ? 'text-red-500' : 'text-gray-500'}`;
+                if (dstElement) dstElement.className = 'text-xs text-blue-600 font-extrabold px-1 py-0.5 rounded-full bg-blue-100/70 border border-blue-300';
+                if(offsetElement) offsetElement.className = `text-xs text-center font-medium mt-1 ${zoneData.isSpecial ? 'text-red-500' : 'text-gray-500'}`;
             }
+
+            cardElement.className = cardClasses;
+
 
             // Update Time and Date text
-            if (timeElement) {
-                timeElement.textContent = timeString;
-            }
-            if (dateElement) {
-                dateElement.textContent = dateString;
-            }
+            if (timeElement) timeElement.textContent = timeString;
+            if (dateElement) dateElement.textContent = dateString;
             
-            // Apply the gradient classes to the card
-            if (cardElement) {
-                 // Base classes that are permanent:
-                const baseClasses = 'time-card p-2 rounded-xl border border-blue-300/50 flex flex-col justify-between relative';
-                
-                // Set the combined classes
-                cardElement.className = `${baseClasses} ${gradientClasses}`;
-            }
-
             // Toggle visibility based on DST status
             if (dstElement) {
-                dstElement.classList.toggle('hidden', !isDST);
+                dstElement.classList.toggle('hidden', !isDST || zoneData.id === 'utc'); 
+                dstElement.textContent = isDST ? (zoneData.id === 'utc' ? 'ZULU' : 'DST') : '';
+            }
+            
+            // Update Offset for special cards
+            if (offsetElement) {
+                if (zoneData.id === 'utc') {
+                    offsetElement.textContent = 'GMT 0 (Standard)';
+                } else if (zoneData.id === 'local') {
+                    const offsetMinutes = now.getTimezoneOffset() * -1;
+                    const offsetHours = offsetMinutes / 60;
+                    const sign = offsetHours >= 0 ? '+' : '';
+                    offsetElement.textContent = `(UTC ${sign}${offsetHours})`;
+                }
             }
         }
 
-        // Main initialization function
+
+        // --- Initialization ---
+
         function initializeClocks() {
-            // Get the main container where all content will be placed
-            const mainContainer = document.getElementById('time-grid');
-            if (!mainContainer) return; 
+            // Load format preference and set the toggle state first
+            loadTimeFormatPreference();
+            const toggleInput = document.getElementById('time-format-toggle');
+            if (toggleInput) {
+                toggleInput.checked = is12HourFormat;
+            }
 
-            // Clear the main container content
-            mainContainer.innerHTML = '';
+            // Load the user's list
+            userClocksList = loadUserClockList();
 
-            // 1. Calculate offset and sort the entire list by time zone (East to West)
-            const sortedTimeZones = timeZones.map(zone => {
-                return {
-                    ...zone,
-                    offsetMinutes: getOffsetMinutes(zone.zone)
-                };
-            }).sort((a, b) => b.offsetMinutes - a.offsetMinutes);
+            // 1. Initial Render
+            renderClocks();
 
-            // 2. Group by continent
-            const continentGroups = sortedTimeZones.reduce((acc, zone) => {
-                const continent = zone.continent;
-                if (!acc[continent]) {
-                    acc[continent] = [];
-                }
-                acc[continent].push(zone);
-                return acc;
-            }, {});
-
-            // 3. Define the desired display order of continents
-            const continentOrder = ['Oceania & Pacific', 'Asia', 'Europe', 'Africa', 'Americas'];
-            
-            // Store all card elements to set up the interval timer later
-            const allCardElements = [];
-
-            // 4. Render the grouped and sorted cities
-            continentOrder.forEach(continent => {
-                if (continentGroups[continent] && continentGroups[continent].length > 0) {
+            // 2. Initialize SortableJS on the main grid
+            const draggableClockGrid = document.getElementById('draggable-clock-grid');
+            new Sortable(draggableClockGrid, {
+                animation: 150,
+                chosenClass: "chosen-clock", 
+                dragClass: "drag-clock", 
+                onEnd: function (evt) {
+                    // Update userClocksList based on new DOM order
+                    const currentOrderIds = Array.from(draggableClockGrid.children)
+                        .map(card => card.getAttribute('data-id'));
                     
-                    // 1. Full-width Centered Header Section
-                    const headerSection = document.createElement('div');
-                    headerSection.className = 'w-full flex justify-center my-4'; 
-                    
-                    const header = document.createElement('h2');
-                    // Line separator remains thin (border-t) and light blue (border-blue-300)
-                    header.className = `continent-separator text-lg font-extrabold text-gray-700 w-full border-t pt-1.5 text-center border-blue-300`;
-                    header.textContent = continent.toUpperCase();
-                    
-                    headerSection.appendChild(header);
-                    mainContainer.appendChild(headerSection); // Append to the main container
+                    userClocksList = currentOrderIds
+                        .map(id => allSelectableTimeZonesMap.get(id))
+                        .filter(zone => zone);
 
-                    // 2. Centered Card Grid Section
-                    const cardGridSection = document.createElement('div');
-                    cardGridSection.className = 'fluid-grid max-w-7xl mx-auto mb-6'; 
-                    
-                    // Add the time cards
-                    continentGroups[continent].forEach(zone => {
-                        const card = createTimeCard(zone);
-                        cardGridSection.appendChild(card);
-                        
-                        // FIX: Pass the card element to updateTime on initial render
-                        updateTime(zone, card); 
-                        
-                        // Store the card and its data for the continuous update loop
-                        allCardElements.push({ card, zone }); 
-                    });
-                    
-                    mainContainer.appendChild(cardGridSection); // Append to the main container
-                }
+                    saveUserClockList();
+                    // Re-render ensures UI stability and re-creates icons if needed (handled by renderClocks)
+                    renderClocks(); 
+                },
             });
 
-            // 5. Setup continuous time updates (every second)
+            // 3. Setup continuous time updates (every second)
             setInterval(() => {
+                // Ensure the list of elements for the loop is correct
                 allCardElements.forEach(item => {
                     updateTime(item.zone, item.card);
                 });
             }, 1000);
-
+            
+            // The initial icon creation is handled inside renderClocks()
         }
+        
+        // Run the initialization when the window loads, after Lucide has created the global 'lucide' object
+        window.onload = initializeClocks; 
 
-        // Run the initialization when the window loads
-        window.onload = initializeClocks;
     </script>
 </body>
 </html>
