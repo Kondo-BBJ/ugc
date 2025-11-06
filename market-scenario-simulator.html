@@ -273,57 +273,51 @@
         /**
          * Copies the user's prompt and the generated analysis report to the clipboard.
          */
-        function copyReport() {
-            const promptText = document.getElementById('scenario-prompt').value.trim();
-            const reportContent = document.getElementById('analysis-text').innerText;
-            const sourcesText = document.getElementById('sources-display').innerText;
-            const reportDateText = document.getElementById('report-date').innerText; // Include date in copy
-            const copyButtonText = document.getElementById('copy-btn-text');
+      function copyReport() {
+  const promptText = document.getElementById('scenario-prompt').value.trim();
+  const reportContentHTML = document.getElementById('analysis-text').innerHTML;
+  const sourcesHTML = document.getElementById('sources-display').innerHTML;
+  const reportDateText = document.getElementById('report-date').innerText;
+  const copyButtonText = document.getElementById('copy-btn-text');
 
-            if (!reportContent) return;
+  if (!reportContentHTML) return;
 
-            // Construct the comprehensive text to copy
-            const fullReport = [
-                "--- BullBearJapan, Inc. Scenario Analysis Report ---",
-                `QUESTION: ${promptText}`,
-                "\n--- ANALYSIS ---",
-                reportContent,
-                `\n${sourcesText}`,
-                `${reportDateText}\n`, // Add the date here
-                "-------------------------------------------------------"
-            ].join('\n');
+  // Inject inline styles ONLY into <h5> tags
+  const styledContent = reportContentHTML.replace(
+    /<h5>(.*?)<\/h5>/g,
+    '<h5 style="color:#4f46e5; font-weight:700; font-size:16px; margin-top:16px; margin-bottom:8px;">$1</h5>'
+  );
 
-            // Use document.execCommand('copy') for guaranteed compatibility
-            try {
-                // 1. Create a temporary textarea element
-                const textarea = document.createElement('textarea');
-                textarea.value = fullReport;
-                // 2. Make it invisible and append it to the body
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = 0;
-                document.body.appendChild(textarea);
-                
-                // 3. Select the text and execute copy command
-                textarea.select();
-                document.execCommand('copy');
-                
-                // 4. Remove the temporary element
-                document.body.removeChild(textarea);
+  const fullHTML = `
+    <div style="font-family:Segoe UI, sans-serif; color:#1f2937; line-height:1.6;">
+      <h3 style="color:#4f46e5; font-weight:700;">BullBearJapan, Inc. Scenario Analysis Report</h3>
+      <p><strong>QUESTION:</strong> ${promptText}</p>
+      <hr style="margin:16px 0;">
+      ${styledContent}
+      <hr style="margin:16px 0;">
+      ${sourcesHTML}
+      <p style="text-align:right; font-size:12px; color:#6b7280;">${reportDateText}</p>
+    </div>
+  `;
 
-                // 5. Provide visual feedback
-                copyButtonText.textContent = '✅ Copied to Clipboard!';
-                setTimeout(() => {
-                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
-                }, 2000);
+  navigator.clipboard.write([
+    new ClipboardItem({
+      "text/html": new Blob([fullHTML], { type: "text/html" })
+    })
+  ]).then(() => {
+    copyButtonText.textContent = '✅ HTML Copied!';
+    setTimeout(() => {
+      copyButtonText.textContent = '📋 Copy Report to Clipboard';
+    }, 2000);
+  }).catch(err => {
+    console.error('HTML copy failed:', err);
+    copyButtonText.textContent = '❌ Copy Failed!';
+    setTimeout(() => {
+      copyButtonText.textContent = '📋 Copy Report to Clipboard';
+    }, 3000);
+  });
+}
 
-            } catch (err) {
-                console.error('Copy failed:', err);
-                copyButtonText.textContent = '❌ Copy Failed!';
-                setTimeout(() => {
-                    copyButtonText.textContent = '📋 Copy Report to Clipboard';
-                }, 3000);
-            }
-        }
 
         /**
          * Converts basic Markdown (headings, bold, tables, lists, and symbols) to HTML.
@@ -344,9 +338,9 @@
             });
             // --------------------------------------------------------------------------
 
-            // 2. Convert generic **bold** to <strong> and *italics* to <em>
-            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
-            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>'); 
+// 2. Convert scoped **bold** and *italics*
+html = html.replace(/(^|\s)\*\*(.+?)\*\*(?=\s|[.,;!?]|$)/g, '$1<strong>$2</strong>');
+html = html.replace(/(^|\s)\*(.+?)\*(?=\s|[.,;!?]|$)/g, '$1<em>$2</em>');
             
             // --- Handle inline LaTeX math $...$ ---
             html = html.replace(/(?<!\$)\$(?!\$)([^\s\$][^\$]*[^\s\$])(?<!\$)\$(?!\$)/g, (match, content) => {
