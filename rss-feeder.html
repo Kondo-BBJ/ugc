@@ -190,7 +190,10 @@
                     { name: "Tariffs", url: ["https://www.world-grain.com/rss/topic/1969-tariffs"] }, 
                     { 
                         name: "Ukraine", 
-                        url: ["https://www.world-grain.com/rss/topic/1920-ukraine-conflict"] 
+                        url: [
+                            "https://www.world-grain.com/rss/topic/1920-ukraine-conflict",
+                            "https://rss.app/feeds/fhnARyVY8fkp1vkJ.xml"
+                        ] 
                     },
                 ]
             },
@@ -270,9 +273,27 @@
                 icon: "📈",
                 subCategories: [
                     { 
-                        // REPLACED DIRECT ECONOMIST FEED with stable aggregator feed
+                        name: "Currencies", 
+                        url: [
+                            "https://www.fxstreet.com/rss/news", // CNN Money/Business (usually very stable)
+                            "https://www.fxstreet.com/rss/analysis", // Yahoo Finance Top Stories (very resilient)
+                        ]
+                    },
+                    { 
+                        name: "Bloomberg", 
+                        url: "https://news.google.com/rss/search?q=when:24h+allinurl:bloomberg.com&hl=en-US&gl=US&ceid=US:en" 
+                    },
+                    { 
                         name: "The Economist", 
                         url: "https://rss.app/feeds/EJKMhHnBfO0xW13z.xml" 
+                    },
+                    { 
+                        name: "FT", 
+                        url: [
+                            "https://www.ft.com/financials?format=rss", // CNN Money/Business (usually very stable)
+                            "https://www.ft.com/global-economy?format=rss", // Yahoo Finance Top Stories (very resilient)
+                            "https://www.ft.com/world?format=rss", // Yahoo Finance Top Stories (very resilient)
+                        ]
                     },
                     { 
                         // REPLACED UNSTABLE AGGREGATORS with highly stable, public news feeds
@@ -289,11 +310,8 @@
                 icon: "🗾",
                 subCategories: [
                     { name: "Japan Today", url: "https://japantoday.com/feed" },
-                    { 
-                        // REPLACED UNSTABLE URL
-                        name: "NHK World", 
-                        url: "https://rss.app/feeds/x00iFq34U1sKjY1I.xml" 
-                    }
+                    { name: "日本海事新聞", url: "https://rss.app/feeds/OQMT4btFwBvMouT3.xml" },
+                    { name: "NHK World", url: "https://rss.app/feeds/x00iFq34U1sKjY1I.xml" }
                 ]
             },
             "Technology": {
@@ -326,13 +344,12 @@
                     } 
                 ]
             },
-            "Daily Digest": {
+            "X": {
                 icon: "📰",
                 subCategories: [
                     { 
-                        // !!! Final attempt feed to test deployment stability
-                        name: "FT Top Stories", 
-                        url: "https://www.ft.com/rss/home"
+                        name: "Karen Braun", 
+                        url: "https://rss.app/feeds/ClCjzvDyCZIV3zyS.xml"
                     } 
                 ]
             }
