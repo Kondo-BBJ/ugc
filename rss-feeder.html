@@ -258,10 +258,10 @@
                         ] 
                     },
                     { 
-                        // General Shipping - REPLACED with TradeWinds
-                        name: "Tradewinds", 
+                        // Fix: Reverted to FreightWaves (General Shipping) as Tradewinds caused a 500 proxy error.
+                        name: "General Shipping", 
                         url: [
-                            "https://tradewindsnews.com/rss" 
+                            "https://www.freightwaves.com/feed" 
                         ] 
                     },
                 ]
@@ -270,9 +270,17 @@
                 icon: "📈",
                 subCategories: [
                     { 
-                        // REPLACED UNSTABLE URL
+                        name: "The Economist", 
+                        url: "https://www.economist.com/finance-and-economics/rss.xml" 
+                    },
+                    { 
+                        // MULTI-SOURCE: Reuters, Bloomberg, and CNBC combined here for better volume
                         name: "Top Business", 
-                        url: "http://feeds.reuters.com/reuters/businessNews" 
+                        url: [
+                            "http://feeds.reuters.com/reuters/businessNews", 
+                            "https://www.bloomberg.com/feeds/bview/all.rss", // Added Bloomberg
+                            "https://www.cnbc.com/id/100003114/device/rss/rss.html" // Added CNBC
+                        ]
                     },
                     { name: "Market Watch", url: "http://feeds.marketwatch.com/marketwatch/topstories/" }
                 ]
