@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic RSS Feed Reader</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5', // Indigo 600
+                        'secondary': '#6366f1', // Indigo 500
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }; 
+    </script>
+    <style>
+        /* Custom styles for a clean, modern look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* light-bg */
+        }
+        .feed-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .feed-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 4px, 6px, 0.05);
+        }
+        /* Keep fixed height for images to ensure card consistency when they exist */
+        .article-image {
+            width: 100%;
+            height: 180px; 
+            object-fit: cover; 
+            border-radius: 0.5rem;
+            margin-bottom: 0; /* Remove margin below the image to keep things tight */
+        }
+        
+        /* Unified style for both Main and Sub active links (pill button look) */
+        .nav-link.active, .sub-nav-link.active {
+            @apply bg-primary text-white shadow-md;
+        }
+        .nav-link, .sub-nav-link {
+            transition: background-color 0.15s;
+        }
+
+        /* Specific style for modal content to handle embedded HTML/images from the feed */
+        .modal-body img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Modal Overlay -->
+    <div id="modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-75 items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start border-b pb-3 mb-4">
+                    <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 pr-12"></h2>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 transition duration-150">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div id="modalContent" class="text-gray-700">
+                    <!-- Article content injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area: Increased max width to max-w-screen-2xl (1536px) -->
+    <div class="max-w-screen-2xl mx-auto">
+        <main class="p-4 md:p-8">
+            
+            <!-- 1. Main Category Navigation (Top Bar) -->
+            <h1 class="text-xl font-bold text-gray-800 mb-2 border-b pb-2">Feed Categories</h1>
+            <nav id="categoryNavContainer" class="bg-white p-2 rounded-xl shadow-lg mb-4">
+                <div id="categoryNav" class="flex flex-wrap gap-2 overflow-x-auto">
+                    <!-- Categories injected here -->
+                </div>
+            </nav>
+
+            <!-- 2. Sub-Category Navigation (Underneath) -->
+            <nav id="subCategoryNav" class="bg-white p-2 rounded-xl shadow-lg mb-8 flex flex-wrap gap-2 overflow-x-auto">
+                <!-- Sub-categories injected here -->
+            </nav>
+            
+            <header class="mb-6">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-4">
+                    <span id="activeCategoryTitle">Welcome</span> 
+                    <span id="activeSubCategoryTitle" class="text-gray-500 font-semibold text-xl"></span>
+                </h2>
+            </header>
+            
+            <!-- 3. Search Box -->
+            <div class="mb-8">
+                <input type="text" id="articleSearch" placeholder="Search articles by title, snippet, or content..."
+                       class="w-full p-3 border border-gray-300 rounded-xl shadow-inner focus:ring-primary focus:border-primary transition duration-150">
+            </div>
+
+            <!-- Feed Content Grid (Now up to 5 columns on 2XL screens) -->
+            <section id="feedContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">Please wait while content loads...</div>
+            </section>
+        </main>
+    </div>
+
+    <script type="text/javascript">
+        // --- Configuration & Constants ---
+        // We must rely on the CORS proxy as the deployment environment prevents direct RSS fetching.
+        // The fact that this works in Preview but fails on Deployment suggests the deployment server blocks this domain.
+        const CORS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+        
+        const RSS_FEEDS = {
+            "Grains": { // Renamed from "Commodities" and moved to first position
+                icon: "🌾",
+                subCategories: [
+                    { 
+                        name: "Market", 
+                        url: [
+                            "https://www.world-grain.com/rss/topic/1035-exports", 
+                            "https://www.world-grain.com/rss/topic/1034-trade", // Restored from previous step
+                            "https://www.world-grain.com/rss/topic/1417-grain-market-review",
+                            "https://www.meatpoultry.com/rss/topic/263-market-reports" 
+                        ]
+                    },
+                    { 
+                        name: "Grain Companies", 
+                        url: [
+                            "https://www.world-grain.com/rss/topic/1852-feed-companies",
+                            "https://www.world-grain.com/rss/topic/1021-grain-handling-storage-companies", 
+                            "https://www.world-grain.com/rss/topic/1022-milling-companies",
+                            "https://www.world-grain.com/rss/topic/1131-adm-milling",
+                            "https://www.world-grain.com/rss/topic/1132-ag-processing-inc-agp"
+                        ] 
+                    }, 
+                    { 
+                        name: "Earnings", 
+                        url: [
+                            "https://www.bakingbusiness.com/rss/topic/865-financial-performance",
+                            "https://www.world-grain.com/rss/topic/1025-financial-performance"
+                        ] 
+                    }, 
+                    { 
+                        name: "M&A", 
+                        url: [
+                            "https://www.world-grain.com/rss/topic/1026-mergers-and-acquisitions",
+                            "https://www.meatpoultry.com/rss/topic/271-mergers-and-acquisitions"
+                        ] 
+                    }, 
+                    { 
+                        name: "Corporate Strategies", 
+                        url: ["https://www.bakingbusiness.com/rss/topic/864-corporate-strategy"] 
+                    }, 
+                    { 
+                        name: "Transport", 
+                        url: [
+                            "https://www.world-grain.com/rss/topic/1370-railroads",
+                            "https://www.world-grain.com/rss/topic/1371-shipping"
+                        ] 
+                    },
+                    { 
+                        name: "International", 
+                        url: ["https://www.bakingbusiness.com/rss/topic/828-international"] 
+                    },
+                    { 
+                        name: "Aquaculture", 
+                        url: ["https://www.world-grain.com/rss/topic/1892-aquaculture"] 
+                    },
+                    { 
+                        name: "Biotechnology", 
+                        url: ["https://www.world-grain.com/rss/topic/1028-biotechnology"] 
+                    },
+                    { 
+                        name: "Biofuel", 
+                        url: ["https://www.world-grain.com/rss/topic/1023-biofuels"] 
+                    },
+                    { name: "Tariffs", url: ["https://www.world-grain.com/rss/topic/1969-tariffs"] }, 
+                    { 
+                        name: "Ukraine", 
+                        url: ["https://www.world-grain.com/rss/topic/1920-ukraine-conflict"] 
+                    },
+                ]
+            },
+            "Ocean Freight": {
+                icon: "🚢",
+                subCategories: [
+                    // Renamed from "Shipping News"
+                    { 
+                        name: "Top Stories", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/feed/",
+                            "https://www.hellenicshippingnews.com/tag/top-stories/feed/",
+                            "https://rss.app/feeds/XdNaq0z00IhU1wIk.xml" // URL retained here
+                        ] 
+                    },
+                    // Renamed from "Cargo News"
+                    { 
+                        name: "Cargo",
+                        url: ["https://www.hellenicshippingnews.com/category/commodities/freight-news/feed/"]
+                    },
+                    { 
+                        // Existing subcategory
+                        name: "Container Rates", 
+                        url: "https://gcaptain.com/feed/" 
+                    },
+                    // UPDATED SUBCATEGORIES START HERE
+                    { 
+                        name: "Market", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/category/shipping-news/hellenic-shipping-news/feed/"
+                        ] 
+                    },
+                    { 
+                        name: "International", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/category/shipping-news/international-shipping-news/feed/"
+                        ] 
+                    },
+                    { 
+                        name: "Dry Bulk", 
+                        url: [
+                            "https://rss.app/feeds/XdNaq0z00IhU1wIk.xml" // URL retained here
+                        ] 
+                    },
+                    { 
+                        name: "Oil & Bunker", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/category/oil-energy/oil-companies-news/feed/",
+                            "https://feeds.feedburner.com/shipandbunker",
+                            "https://www.hellenicshippingnews.com/category/oil-energy/general-energy-news/feed/"
+                        ] 
+                    },
+                    { 
+                        name: "Commodity", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/category/commodities/commodity-news/feed/"
+                        ] 
+                    },
+                    { 
+                        name: "Insurance, Law & Safety", 
+                        url: [
+                            "https://www.hellenicshippingnews.com/category/shipping-news/marine-insurance-pi-club-news/feed/",
+                            "https://www.hellenicshippingnews.com/category/shipping-news/piracy-and-security-news/feed/",
+                            "https://www.hellenicshippingnews.com/category/shipping-news/shipping-law-news/feed/"
+                        ] 
+                    },
+                    { 
+                        // General Shipping - Freightwaves (Known stable)
+                        name: "General Shipping", 
+                        url: [
+                            "https://www.freightwaves.com/feed" 
+                        ] 
+                    },
+                ]
+            },
+            "Financial": {
+                icon: "📈",
+                subCategories: [
+                    { 
+                        // REPLACED UNSTABLE URL
+                        name: "Top Business", 
+                        url: "http://feeds.reuters.com/reuters/businessNews" 
+                    },
+                    { name: "Market Watch", url: "http://feeds.marketwatch.com/marketwatch/topstories/" }
+                ]
+            },
+            "Japan News": {
+                icon: "🗾",
+                subCategories: [
+                    { name: "Japan Today", url: "https://japantoday.com/feed" },
+                    { 
+                        // REPLACED UNSTABLE URL
+                        name: "NHK World", 
+                        url: "https://rss.app/feeds/x00iFq34U1sKjY1I.xml" 
+                    }
+                ]
+            },
+            "Technology": {
+                icon: "💻",
+                subCategories: [
+                    { name: "Tech News", url: "https://www.theverge.com/rss/index.xml" },
+                    { name: "Hacker News", url: "https://hnrss.org/frontpage" },
+                    { name: "Google Dev", url: "https://cloudblog.withgoogle.com/rss/" } 
+                ]
+            },
+            "World News": {
+                icon: "🌍",
+                subCategories: [
+                    { name: "CNN Top Stories", url: "http://rss.cnn.com/rss/cnn_topstories.rss" },
+                    { name: "Reuters Top", url: "https://rss.app/feeds/457c8wSuEETAWGzX.xml" } 
+                ]
+            },
+            "Science": {
+                icon: "🔬",
+                subCategories: [
+                    { 
+                        // REPLACED UNSTABLE URL
+                        name: "NASA Breaking", 
+                        url: "https://www.sciencedaily.com/rss/space_time.xml" 
+                    },
+                    { 
+                        // REPLACED UNSTABLE URL
+                        name: "Nature News", 
+                        url: "https://phys.org/rss-feed/" 
+                    } 
+                ]
+            },
+            "Daily Digest": {
+                icon: "📰",
+                subCategories: [
+                    { 
+                        // !!! FINAL ATTEMPT FIX: Using Financial Times (known extremely stable) to confirm proxy status.
+                        name: "FT Top Stories", 
+                        url: "https://www.ft.com/rss/home"
+                    } 
+                ]
+            }
+        };
+
+        // --- Global State & DOM References ---
+        let feedContent; 
+        let currentArticles = []; 
+        
+        // --- Modal Control Functions ---
+        function showModal(title, content) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        // --- Utility Functions ---
+
+        /** Parses articles from the RSS2JSON JSON response. */
+        function parseArticles(jsonResponse, url) {
+            if (!jsonResponse || jsonResponse.status !== 'ok' || !jsonResponse.items) {
+                console.warn(`JSON response did not contain expected data for ${url}. The proxy likely failed to parse the feed or was blocked.`, jsonResponse);
+                return [];
+            }
+            
+            const feedTitle = jsonResponse.feed.title || url;
+
+            return jsonResponse.items.map(entry => {
+                let fullDescription = entry.description || entry.content || '';
+                
+                let snippet = '';
+                if (fullDescription) {
+                    const tempElement = document.createElement('div');
+                    tempElement.innerHTML = fullDescription;
+                    snippet = tempElement.textContent || tempElement.innerText || '';
+                    snippet = snippet.substring(0, 250) + (snippet.length > 250 ? '...' : '');
+                }
+
+                const imageUrl = entry.enclosure?.link || entry.thumbnail || null; // Added safe navigation for enclosure
+
+                return {
+                    title: entry.title,
+                    link: entry.link,
+                    snippet: snippet,
+                    date: entry.pubDate,
+                    imageUrl: imageUrl, 
+                    feedTitle: feedTitle,
+                    fullDescription: fullDescription,
+                };
+            });
+        }
+
+        /** * Core helper to fetch a single RSS feed and return articles, with retry logic. 
+         * Includes a note about potential CORS proxy failure (500 errors).
+         */
+        async function fetchRSSFeedSingle(url, attempt = 0) { 
+            const MAX_RETRIES = 3;
+            const delay = 1000 * Math.pow(2, attempt);
+
+            // Check if the URL is empty (placeholder for future feeds)
+            if (!url || (Array.isArray(url) && url.length === 0)) {
+                return [];
+            }
+
+            try {
+                const proxyUrl = `${CORS_PROXY}${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                
+                if (!response.ok) {
+                    // Throw a specific error for non-200 HTTP statuses
+                    throw new Error(`HTTP error! Status: ${response.status} for URL: ${url}`);
+                }
+
+                const json = await response.json();
+                
+                if (json.status && json.status !== 'ok') {
+                    // Throw a specific error for proxy-reported failures
+                    throw new Error(`Proxy status error: ${json.message || 'Unknown error'} for URL: ${url}`);
+                }
+                
+                return parseArticles(json, url);
+
+            } catch (error) {
+                const errorMessage = error.message;
+
+                if (attempt < MAX_RETRIES - 1) {
+                    // Only retry if we haven't reached max attempts
+                    console.error(`[Attempt ${attempt + 1}/${MAX_RETRIES}] Failed to load feed ${url}. Retrying in ${delay / 1000}s. Error: ${errorMessage}`);
+                    await new Promise(r => setTimeout(r, delay));
+                    return fetchRSSFeedSingle(url, attempt + 1); // Recursive call for retry
+                } else {
+                    // Log definitive failure after all retries
+                    console.error(`[CRITICAL DEPLOYMENT FAILURE] Feed ${url} failed all attempts. Diagnosis: The external environment is highly likely blocking all requests to the CORS proxy (${CORS_PROXY}).`);
+                }
+                
+                return []; 
+            }
+        }
+        
+        function normalizeTitle(title) {
+            return title.toLowerCase().replace(/[^\w\s]/g, '').trim();
+        }
+
+        function processAndStoreArticles(articles) {
+            if (!feedContent) return; 
+
+            if (articles.length === 0) {
+                currentArticles = [];
+                feedContent.innerHTML = '<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">No articles found in this feed.</div>';
+                return;
+            }
+            
+            const sortedArticles = articles.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateB - dateA;
+            });
+
+            const seenNormalizedTitles = new Set();
+            const uniqueArticles = sortedArticles.filter(article => {
+                const normalized = normalizeTitle(article.title);
+                
+                if (seenNormalizedTitles.has(normalized)) {
+                    return false; 
+                }
+                seenNormalizedTitles.add(normalized);
+                return true; 
+            });
+
+            currentArticles = uniqueArticles;
+            
+            const searchTerm = document.getElementById('articleSearch').value.trim();
+            filterArticles(searchTerm);
+        }
+
+        function filterArticles(searchTerm) {
+            const lowerSearchTerm = searchTerm.toLowerCase();
+
+            if (lowerSearchTerm === '') {
+                feedContent.innerHTML = currentArticles.map(article => renderArticle(article)).join('');
+            } else {
+                const filtered = currentArticles.filter(article => {
+                    const title = article.title.toLowerCase();
+                    const snippet = article.snippet.toLowerCase();
+                    const fullDescription = article.fullDescription ? article.fullDescription.toLowerCase() : '';
+
+                    return title.includes(lowerSearchTerm) || 
+                           snippet.includes(lowerSearchTerm) ||
+                           fullDescription.includes(lowerSearchTerm);
+                });
+
+                if (filtered.length === 0) {
+                    feedContent.innerHTML = `<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">No articles found matching "<strong>${searchTerm}</strong>".</div>`;
+                } else {
+                    feedContent.innerHTML = filtered.map(article => renderArticle(article)).join('');
+                }
+            }
+        }
+        
+        async function fetchCombinedRSSFeeds(urls, displayName) {
+            if (!feedContent) return;
+            
+            document.getElementById('articleSearch').value = ''; 
+            
+            if (!urls || urls.length === 0) {
+                feedContent.innerHTML = `<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">No feed URLs have been configured for the "<strong>${displayName}</strong>" sub-category yet.</div>`;
+                currentArticles = [];
+                return;
+            }
+
+
+            feedContent.innerHTML = `<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic" id="feed-loader">
+                <svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading ${displayName} feeds (${urls.length} sources)...
+            </div>`;
+            
+            const fetchPromises = urls.map(url => fetchRSSFeedSingle(url)); 
+            const results = await Promise.all(fetchPromises);
+            
+            const allArticles = results.flat(); 
+            
+            const loader = document.getElementById('feed-loader');
+            if (loader) loader.remove();
+
+            processAndStoreArticles(allArticles);
+        }
+        
+        function renderArticle(article) {
+            const fallbackImage = 'https://placehold.co/400x180/e5e7eb/6b7280?text=No+Image';
+            const imageUrl = article.imageUrl; 
+            const hasImage = !!imageUrl; 
+
+            const dateStr = article.date ? new Date(article.date).toLocaleDateString() : 'N/A';
+            
+            const safeArticleJson = encodeURIComponent(JSON.stringify(article));
+            // Ensure handleClick is correctly wrapped in quotes
+            const handleClick = `showArticleDetails('${safeArticleJson}')`; 
+
+            const imageBlock = hasImage ? `
+                <img src="${imageUrl}" 
+                     onerror="this.onerror=null;this.src='${fallbackImage}';"
+                     alt="${article.title}" class="article-image">
+            ` : '';
+            
+            return `
+                <div class="feed-card bg-white rounded-xl shadow-md overflow-hidden flex flex-col" onclick="${handleClick}">
+                    ${imageBlock}
+                    <div class="p-4 flex flex-col flex-grow">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">${article.title}</h3>
+                        <p class="text-sm text-gray-500 mb-3 flex-grow line-clamp-3">${article.snippet}</p>
+                        <div class="flex justify-between items-center text-xs text-gray-400 border-t pt-2 mt-auto">
+                            <span>${dateStr}</span>
+                            <span class="font-medium text-primary">${article.feedTitle}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        /**
+         * Decodes article data and opens the modal.
+         */
+        function showArticleDetails(encodedData) {
+            try {
+                const articleJson = decodeURIComponent(encodedData);
+                const article = JSON.parse(articleJson);
+
+                let displayContent = article.fullDescription || article.snippet;
+                
+                if (!displayContent || displayContent.trim().length < 5) {
+                    displayContent = `
+                        <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-lg mb-4">
+                            <p class="font-bold mb-1">Content Unavailable in Feed</p>
+                            <p>This feed item did not include the full article text. Displaying available snippet.</p>
+                        </div>
+                        <div class="modal-body">${article.snippet}</div>
+                    `;
+                } else {
+                    displayContent = `<div class="modal-body">${displayContent}</div>`;
+                }
+                
+                // Construct and show the modal content
+                const content = `
+                    <!-- Metadata line -->
+                    <p class="text-sm font-medium text-gray-500 mb-4">${new Date(article.date).toLocaleString() || 'Date N/A'} | ${article.feedTitle}</p>
+                    
+                    <!-- Full Article Description/Content -->
+                    <div id="articleContentWrapper" class="text-gray-700 leading-relaxed overflow-y-auto max-h-[70vh] mb-6">
+                        ${displayContent}
+                    </div>
+                    
+                    <!-- Button to jump to source (BOTTOM) - This is the only button remaining -->
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" 
+                       class="inline-block bg-primary text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition duration-150 font-medium">
+                        Read Full Article &rarr;
+                    </a>
+                `;
+                showModal(article.title, content);
+            } catch (e) {
+                console.error("Error decoding article details:", e);
+                showModal("Error Loading Article", "Could not load article details.");
+            }
+        }
+
+        // --- Navigation Logic ---
+
+        function renderCategoryNav() {
+            const categoryNav = document.getElementById('categoryNav');
+            categoryNav.innerHTML = Object.keys(RSS_FEEDS).map(categoryName => `
+                <button onclick="selectCategory('${categoryName}')" class="nav-link text-gray-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition duration-150 flex items-center" data-category="${categoryName}">
+                    <span class="text-lg mr-2">${RSS_FEEDS[categoryName].icon}</span>
+                    <span>${categoryName}</span>
+                </button>
+            `).join('');
+        }
+
+        function renderSubCategoryNav(categoryName) {
+            const subCategoryNav = document.getElementById('subCategoryNav');
+            const subCategories = RSS_FEEDS[categoryName].subCategories;
+            
+            subCategoryNav.innerHTML = subCategories.map(sub => {
+                const urlArray = Array.isArray(sub.url) ? sub.url : (sub.url ? [sub.url] : []);
+                const isEmpty = urlArray.length === 0;
+
+                // The value to pass to the function (single URL or encoded JSON array)
+                const urlValue = encodeURIComponent(JSON.stringify(urlArray)); 
+                let icon = '';
+                
+                // Only show (Empty) flag, remove source count for combined feeds
+                if (isEmpty) {
+                    icon = ` <span class="ml-1 text-red-500 text-xs">(Empty)</span>`;
+                }
+                
+                // Note: The argument is wrapped in single quotes for the JS call
+                return `
+                    <button onclick="selectSubCategory('${categoryName}', '${sub.name}', '${urlValue}')" 
+                            class="sub-nav-link text-gray-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition duration-150 flex items-center" 
+                            data-sub-category="${sub.name}">
+                        ${sub.name}
+                        ${icon}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setActiveNav(categoryName, subCategoryName = null) {
+            document.getElementById('activeCategoryTitle').textContent = categoryName;
+            
+            const subTitle = subCategoryName === null 
+                ? ' / All Feeds' 
+                : subCategoryName.length > 0 ? ` / ${subCategoryName}` : '';
+            document.getElementById('activeSubCategoryTitle').textContent = subTitle;
+
+            document.querySelectorAll('#categoryNav .nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-category') === categoryName) {
+                    link.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('#subCategoryNav .sub-nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            if (subCategoryName && subCategoryName.length > 0) {
+                const activeSubCategoryLink = document.querySelector(`#subCategoryNav .sub-nav-link[data-sub-category="${subCategoryName}"]`);
+                if (activeSubCategoryLink) {
+                    activeSubCategoryLink.classList.add('active');
+                }
+            }
+        }
+
+        /**
+         * Selects a main category. Renders sub-categories and automatically selects the first one.
+         */
+        function selectCategory(categoryName) {
+            // 1. Render sub-nav for the new category
+            renderSubCategoryNav(categoryName);
+            
+            const subCategories = RSS_FEEDS[categoryName].subCategories;
+
+            if (subCategories && subCategories.length > 0) {
+                // 2. Automatically select the first sub-category
+                const firstSub = subCategories[0];
+                
+                // 3. Prepare arguments for selectSubCategory (mimicking button click)
+                const urlArray = Array.isArray(firstSub.url) ? firstSub.url : (firstSub.url ? [firstSub.url] : []);
+                const urlValue = encodeURIComponent(JSON.stringify(urlArray));
+
+                // 4. Call the sub-category selection logic
+                selectSubCategory(categoryName, firstSub.name, urlValue);
+            } else {
+                // Fallback for categories with no sub-categories
+                setActiveNav(categoryName, null);
+                feedContent.innerHTML = '<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">This category has no defined sub-categories.</div>';
+            }
+        }
+
+        function selectSubCategory(categoryName, subCategoryName, urlOrUrls) {
+            setActiveNav(categoryName, subCategoryName);
+
+            let urls;
+            
+            // The urlOrUrls will always be an encoded JSON array string from renderSubCategoryNav/selectCategory
+            try {
+                const decodedStr = decodeURIComponent(urlOrUrls);
+                // JSON.parse returns the array of URLs
+                urls = JSON.parse(decodedStr).filter(url => url && url.length > 0); // Filter out empty strings
+            } catch(e) {
+                console.error("Error parsing URL array for sub-category:", e);
+                urls = [];
+            }
+            
+            if (urls.length >= 1) {
+                fetchCombinedRSSFeeds(urls, subCategoryName);
+            } else {
+                 // Custom message for empty feeds
+                 feedContent.innerHTML = `<div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">No feed URLs have been configured for the "<strong>${subCategoryName}</strong>" sub-category yet.</div>`;
+                 currentArticles = [];
+            }
+        }
+
+        // --- Initialization ---
+
+       window.onload = () => {
+            // Safely initialize DOM references
+            feedContent = document.getElementById('feedContent'); 
+
+            // Initialize Modal listener
+            const closeModalBtn = document.getElementById('closeModal');
+            const modal = document.getElementById('modal');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', closeModal);
+            }
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            // Search listener
+            const searchInput = document.getElementById('articleSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    clearTimeout(window.searchTimeout); 
+                    window.searchTimeout = setTimeout(() => {
+                        filterArticles(e.target.value.trim());
+                    }, 300);
+                });
+            }
+
+            renderCategoryNav(); 
+            
+            // Default load the Grains category, which will now automatically select its first sub-category ("Market")
+            selectCategory('Grains');
+        };
+
+    </script>
+</body>
+</html>
