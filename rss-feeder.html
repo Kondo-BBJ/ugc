@@ -120,7 +120,6 @@
     <script type="text/javascript">
         // --- Configuration & Constants ---
         // We must rely on the CORS proxy as the deployment environment prevents direct RSS fetching.
-        // The fact that this works in Preview but fails on Deployment suggests the deployment server blocks this domain.
         const CORS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
         
         const RSS_FEEDS = {
@@ -131,9 +130,10 @@
                         name: "Market", 
                         url: [
                             "https://www.world-grain.com/rss/topic/1035-exports", 
-                            "https://www.world-grain.com/rss/topic/1034-trade", // Restored from previous step
+                            "https://www.world-grain.com/rss/topic/1034-trade", 
                             "https://www.world-grain.com/rss/topic/1417-grain-market-review",
-                            "https://www.meatpoultry.com/rss/topic/263-market-reports" 
+                            // REPLACED UNSTABLE URL: https://www.meatpoultry.com/rss/topic/263-market-reports
+                            "https://www.agriculture.com/news/business/markets/rss" 
                         ]
                     },
                     { 
@@ -270,16 +270,16 @@
                 icon: "📈",
                 subCategories: [
                     { 
+                        // REPLACED DIRECT ECONOMIST FEED with stable aggregator feed
                         name: "The Economist", 
-                        url: "https://www.economist.com/finance-and-economics/rss.xml" 
+                        url: "https://rss.app/feeds/EJKMhHnBfO0xW13z.xml" 
                     },
                     { 
-                        // MULTI-SOURCE: Reuters, Bloomberg, and CNBC combined here for better volume
+                        // REPLACED UNSTABLE AGGREGATORS with highly stable, public news feeds
                         name: "Top Business", 
                         url: [
-                            "http://feeds.reuters.com/reuters/businessNews", 
-                            "https://www.bloomberg.com/feeds/bview/all.rss", // Added Bloomberg
-                            "https://www.cnbc.com/id/100003114/device/rss/rss.html" // Added CNBC
+                            "http://rss.cnn.com/rss/money_latest.rss", // CNN Money/Business (usually very stable)
+                            "https://finance.yahoo.com/news/rss", // Yahoo Finance Top Stories (very resilient)
                         ]
                     },
                     { name: "Market Watch", url: "http://feeds.marketwatch.com/marketwatch/topstories/" }
@@ -395,9 +395,7 @@
             });
         }
 
-        /** * Core helper to fetch a single RSS feed and return articles, with retry logic. 
-         * Includes a note about potential CORS proxy failure (500 errors).
-         */
+        /** * Core helper to fetch a single RSS feed and return articles, with retry logic. */
         async function fetchRSSFeedSingle(url, attempt = 0) { 
             const MAX_RETRIES = 3;
             const delay = 1000 * Math.pow(2, attempt);
@@ -435,7 +433,7 @@
                     return fetchRSSFeedSingle(url, attempt + 1); // Recursive call for retry
                 } else {
                     // Log definitive failure after all retries
-                    console.error(`[CRITICAL DEPLOYMENT FAILURE] Feed ${url} failed all attempts. Diagnosis: The external environment is highly likely blocking all requests to the CORS proxy (${CORS_PROXY}).`);
+                    console.error(`[Feed Failure] Feed ${url} failed all attempts. Error: ${errorMessage}`);
                 }
                 
                 return []; 
