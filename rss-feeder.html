@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Feed Reader (RSS & Iframe)</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#059669', // Emerald 600
+                        'primary': '#059669', // Emerald 600 - Deep Green
                         'secondary': '#10b981', // Emerald 500
                     },
                     fontFamily: {
@@ -24,8 +26,15 @@
         /* Custom styles for a clean, modern look */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f5f5f7; /* Changed from #f0fdfa to match iframe background */
+            background-color: #f5f5f7;
         }
+        
+        /* --- ADDED: Custom, extra-wide max width (1800px) --- */
+        .max-w-extra-wide {
+            max-width: 1800px;
+        }
+        /* ----------------------------------------------------- */
+
         .feed-card {
             transition: transform 0.2s, box-shadow 0.2s;
             cursor: pointer;
@@ -42,13 +51,27 @@
             margin-bottom: 0; 
         }
         
-        /* Unified style for active links (pill button look) */
-        .nav-link.active, .sub-nav-link.active {
-            @apply bg-primary text-white shadow-lg;
-        }
+        /* --- HIGHLY VISIBLE ACTIVE STATE (Explicit Styles) --- */
+        
+        /* Define the base styles for non-active buttons (this is crucial for resetting) */
         .nav-link, .sub-nav-link {
-            transition: background-color 0.15s;
+            /* These styles are also explicitly added in JS to the generated HTML buttons for robustness */
+            @apply bg-white text-gray-600 border border-gray-200 shadow-sm font-normal;
+            transition: all 0.2s ease-in-out;
+            white-space: nowrap; /* Prevent wrapping */
         }
+
+        /* Define the ACTIVE state with maximum contrast */
+        .nav-link.active, .sub-nav-link.active {
+            /* Ensure maximum priority by overriding base styles */
+            @apply !bg-primary !text-white !border-primary !shadow-lg !shadow-primary/50 !font-semibold; 
+        }
+
+        .nav-link:hover:not(.active), .sub-nav-link:hover:not(.active) {
+            /* Clear hover effect on non-active buttons */
+            @apply bg-gray-100 border-gray-300;
+        }
+        /* ----------------------------------------------------- */
 
         /* Specific style for modal content */
         .modal-body img {
@@ -58,11 +81,12 @@
             margin: 1rem 0;
         }
 
-        /* Responsive iframe container for aspect ratio (177.78% provided by user) */
+        /* Responsive iframe container for aspect ratio (1600/900 * 100 = 177.78% based on user's previous iframe sizes) */
         .iframe-container {
             position: relative; 
             width: 100%; 
-            padding-top: 177.78%; /* Aspect ratio: 1600/900 * 100 */
+            /* Aspect ratio: 1600/900 * 100 = 177.78%. */
+            padding-top: 177.78%; 
         }
         .iframe-container iframe {
             position: absolute; 
@@ -71,13 +95,13 @@
             width: 100%; 
             height: 100%; 
             border: 0;
-            border-radius: 0.75rem;
         }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!-- Modal Overlay (For RSS Article Details) --><div id="modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-75 items-center justify-center p-4">
+    <!-- Modal Overlay (For RSS Article Details) -->
+    <div id="modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-75 items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div class="p-6">
                 <div class="flex justify-between items-start border-b pb-3 mb-4">
@@ -87,23 +111,31 @@
                     </button>
                 </div>
                 <div id="modalContent" class="text-gray-700">
-                    <!-- Article content injected here --></div>
+                    <!-- Article content injected here -->
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Area --><div class="max-w-screen-2xl mx-auto">
+    <!-- Main Content Area -->
+    <div class="max-w-extra-wide mx-auto w-full">
         <main class="p-4 md:p-8">
             
-            <!-- 1. Main Category Navigation (Top Bar) --><h1 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Feed Categories</h1>
-            <nav id="categoryNavContainer" class="bg-white p-2 rounded-xl shadow-lg mb-4 border-b-4 border-primary/20">
-                <div id="categoryNav" class="flex flex-wrap gap-2 overflow-x-auto">
-                    <!-- Categories injected here --></div>
-            </nav>
+            <!-- 1. Combined Header and Main Category Navigation (Side-by-side on MD+) -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 border-b pb-2">
+                <h1 class="text-2xl font-bold text-gray-800 mb-2 md:mb-0 md:min-w-fit">News & Topics</h1>
+                <nav id="categoryNavContainer" class="p-2 md:ml-6 md:flex-grow">
+                    <div id="categoryNav" class="flex flex-wrap md:flex-nowrap gap-2 overflow-x-auto">
+                        <!-- Categories injected here -->
+                    </div>
+                </nav>
+            </div>
 
-            <!-- 2. Sub-Category Navigation (Underneath) --><h2 class="text-xl font-semibold text-gray-700 mb-2 mt-6">Sub-Feeds</h2>
-            <nav id="subCategoryNav" class="bg-white p-2 rounded-xl shadow-lg mb-8 flex flex-wrap gap-2 overflow-x-auto border-l-4 border-secondary/50">
-                <!-- Sub-categories injected here --></nav>
+
+            <!-- 2. Sub-Category Navigation (Removed h2 title) -->
+            <nav id="subCategoryNav" class="p-2 mb-8 flex flex-wrap gap-2 overflow-x-auto">
+                <!-- Sub-categories injected here -->
+            </nav>
             
             <header class="mb-6">
                 <h3 class="text-3xl font-extrabold text-gray-900 mb-4">
@@ -112,12 +144,14 @@
                 </h3>
             </header>
             
-            <!-- 3. Search Box - Only visible/relevant for traditional RSS feeds --><div id="searchContainer" class="mb-8 hidden">
+            <!-- 3. Search Box - Only visible/relevant for traditional RSS feeds -->
+            <div id="searchContainer" class="mb-8 hidden">
                 <input type="text" id="articleSearch" placeholder="Search articles by title, snippet, or content..."
                        class="w-full p-3 border border-gray-300 rounded-xl shadow-inner focus:ring-primary focus:border-primary transition duration-150">
             </div>
 
-            <!-- Feed Content Grid (For RSS Articles or Iframe) --><section id="feedContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <!-- Feed Content Grid (For RSS Articles or Iframe) -->
+            <section id="feedContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 <div class="2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2 text-center p-12 text-gray-500 italic">Please select a sub-feed to view content.</div>
             </section>
         </main>
@@ -126,43 +160,257 @@
     <script type="text/javascript">
         // --- Configuration & Constants ---
         const CORS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+        const LAST_CATEGORY_KEY = 'lastSelectedCategory';
+        const LAST_SUB_CATEGORY_KEY = 'lastSelectedSubCategory';
+
         
-        // RSS_FEEDS: Subcategories now use either a 'url' array (for traditional RSS) or 'iframeUrl'.
+        // RSS_FEEDS: Updated structure with new categories and content moved to placeholders.
         const RSS_FEEDS = {
-            "Commodity Feeds": {
-                icon: "📈",
+            "Grains": {
+                icon: "🌾",
+                subCategories: [
+                    // --- UPDATED: iframeUrl added to All Grain News ---
+                    { 
+                        name: "All Grain News", 
+                        url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_Y2YL3oJVWQf7ho7X"
+                    },
+                    { name: "Market", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_qng8r58lFlMBpOZc" },
+                    { name: "Grain Companies", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_z6kn9iGdXhhbcPv5" },
+                    { name: "Earnings", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_R6bIIzyNtPosCB5d" },
+                    { name: "M&A", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_3UjeWUu6sKpDumGc" },
+                    { name: "Corporate Strategies", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/PQe5lOjtabFUpm7F" },
+                    { name: "Transport", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/_gWifx53kvpHIoRDk" },
+                    { name: "International", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/elvhpo03SJvQRhyQ" },
+                    { name: "Aquaculture", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/DulIKsADYvBxerLO" },
+                    { name: "Biotechnology", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/CrJ0jobzSJlykdts" },
+                    { name: "Biofuel", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/Aq24kWymlK925Dyj" },
+                    { name: "Tariffs", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/UqY9Q4rOozCFbPRT" },
+                    { name: "Ukraine", url: [],
+                        iframeUrl: "https://rss.app/embed/v1/wall/vcbba8osqBz0g1Nl" },
+                ]
+            },
+            "Ocean Freight": {
+                icon: "🚢",
                 subCategories: [
                     { 
-                        name: "X / Karen Braun", 
-                        url: [], // Empty array for traditional RSS
-                        iframeUrl: "https://rss.app/embed/v1/wall/ClCjzvDyCZIV3zyS" // Iframe URL takes priority
+                        name: "All Ocean Freight News", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/_lx3RTxVDk688nW3g" // All Ocean Freight News (Placeholder)
+                    },
+                    { 
+                        name: "Top Stories", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/51WU6x9OsTYkmLhx" 
+                    },
+                    { 
+                        name: "Market", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/4qZGi0ch96yiLzSp"
+                    },
+                    { 
+                        name: "International", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/QqRvU5DDtXW0v4tb" 
+                    },
+                    { 
+                        name: "Dry Bulk", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/cC0dJuTZdaSHfEjV" 
+                    },
+                    { 
+                        name: "Cargo", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/4qZGi0ch96yiLzSp" 
+                    },
+                    { 
+                        name: "Oil & Bunker", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/_XoqJqBuTplmnRv7G" 
+                    },
+                    { 
+                        name: "Commodity", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/4qZGi0ch96yiLzSp" 
+                    },
+                    { 
+                        name: "Insurance, Law & Safety", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/_shO0EuFuRSYMWIYT" 
+                    },
+                    { 
+                        name: "Tradewinds", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/T4zbnznqImXVwPxD" 
+                    },
+                ]
+            },
+            "Financial": {
+                icon: "💰",
+                subCategories: [
+                    { name: "All Financial News", iframeUrl: "https://rss.app/embed/v1/wall/_JnbnULRoTDeR8PDC" }, 
+                    { name: "Currencies", iframeUrl: "https://rss.app/embed/v1/wall/_3dESGAxS30W3MfWs" },
+                    { name: "Bloomberg", iframeUrl: "https://rss.app/embed/v1/wall/tPAc0SvHPmIRGHf6" },
+                    { name: "The Economist", iframeUrl: "https://rss.app/embed/v1/wall/tteFpb6z51Z5goPI" },
+                    { name: "FT", iframeUrl: "https://rss.app/embed/v1/wall/tIe6rqLRpZd5pg4E" },
+                    { name: "Reuters", iframeUrl: "https://rss.app/embed/v1/wall/tI620kUKzs4xfhYy" },
+                    { name: "WSJ", iframeUrl: "https://rss.app/embed/v1/wall/t7edwlZvqrbKJvdw" },
+                    { name: "AFRICA", iframeUrl: "https://rss.app/embed/v1/wall/Qq8qJlcX8Q6LVo8P" }
+
+                ]
+            },
+            "X": {
+                icon: "❌",
+                subCategories: [
+                    { 
+                        name: "Karen Braun", 
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/ClCjzvDyCZIV3zyS" 
                     }, 
-                    { name: "Ocean Freight Index", url: [] }, 
-                    { name: "Agri-Business Insights", url: [] },
                 ]
             },
             "Japan News": {
                 icon: "🗾",
                 subCategories: [
-                    // These use traditional RSS fetching
-                    { name: "Japan Today", url: ["https://japantoday.com/feed"] },
-                    { name: "日本海事新聞", url: ["https://rss.app/feeds/OQMT4btFwBvMouT3.xml"] },
-                    { name: "NHK World", url: ["https://rss.app/feeds/x00iFq34U1sKjY1I.xml"] }
-                ]
-            },
-            "Empty Category": {
-                icon: "📁",
-                subCategories: [
-                    { name: "Empty Example", url: [] }
+                    // --- JAPAN NEWS FEEDS ---
+                    { 
+                        name: "すべて", 
+                        // This array will be populated dynamically by collectAllRssUrls() function later.
+                        iframeUrl: "https://rss.app/embed/v1/wall/_TvSOOzQH9u6PzYEh"
+                    },
+                    { 
+                        name: "ブルームバーグ", 
+                        url: [],
+                        // Existing iframe URL for Bloomberg Japan
+                        iframeUrl: "https://rss.app/embed/v1/wall/_l5vS2TXfngu8TgmW" 
+                    },
+                    { 
+                        name: "ロイター", 
+                        url: [], 
+                        // Existing iframe URL for Reuters Japan
+                        iframeUrl: "https://rss.app/embed/v1/wall/457c8wSuEETAWGzX"
+                    },
+                    { 
+                        name: "日本経済新聞", 
+                        url: [], 
+                        // Existing iframe URL for Nikkei
+                        iframeUrl: "https://rss.app/embed/v1/wall/_uCusPHbKRezynJGw"
+                    },
+                    { 
+                        name: "みんかぶ", 
+                        url: [], 
+                        // Existing iframe URL for Minkabu
+                        iframeUrl: "https://rss.app/embed/v1/wall/_T6e1jc3ar5sXwdo2"
+                    },
+                    { 
+                        name: "海事プレス", 
+                        url: [], 
+                        // Existing iframe URL for Kaiji Press
+                        iframeUrl: "https://rss.app/embed/v1/wall/_Q5uEUoY5NeEbIROs"
+                    },
+                    { 
+                        name: "日本海事新聞", 
+                        // Existing iframe URL for Kaiji Shimbun
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/_35IRLWRpued4l5k4"
+                    },
+                    { 
+                        name: "食品新聞", 
+                        url: [],
+                        // Existing iframe URL preserved
+                        iframeUrl: "https://rss.app/embed/v1/wall/_qxLKReD00uQYh1FS"
+                    },
+                    { 
+                        name: "日本食糧新聞", 
+                        url: [], 
+                        // UPDATED: New iframe URL for Japan Food Journal
+                        iframeUrl: "https://rss.app/embed/v1/wall/_2UAortsZWv6lmJyb"
+                    },
+                    { 
+                        name: "鉄鋼新聞", 
+                        url: [], 
+                        // ユーザー指定のiframe URL
+                        iframeUrl: "https://rss.app/embed/v1/wall/g9tRJwsHjQGcD6jg"
+                    },
+                    { 
+                        name: "四季報", 
+                        url: [], 
+                        // ユーザー指定のiframe URL
+                        iframeUrl: "https://rss.app/embed/v1/wall/0NlCT8VqiaQqKo3D"
+                    },
+                    { 
+                        name: "東洋経済", 
+                        // 修正: RSS URLを削除し、iframe URLを追加
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/5vXq1PQTYAcQtJbn"
+                    },
+                    { 
+                        name: "日本の人事部", // RSSウォールとして機能
+                        url: [], 
+                        iframeUrl: "https://rss.app/embed/v1/wall/zt4dBfaNYPvUAQYq" 
+                    },
                 ]
             },
         };
+        
+        // Function to collect all unique RSS URLs from the Japan News category, 
+        // excluding the "全て (All Feeds)" subcategory itself and entries with only iframeUrl.
+        function collectAllRssUrls() {
+            const japanNews = RSS_FEEDS["Japan News"].subCategories;
+            const allRssUrls = [];
+            
+            japanNews.forEach(sub => {
+                // Skip the "全て" entry itself or the one with iframeUrl
+                if (sub.name.includes("全て") || sub.iframeUrl) return; 
+
+                // Only collect RSS URLs if iframeUrl is NOT present and url is present
+                if (sub.url && sub.url.length > 0) {
+                    allRssUrls.push(...sub.url);
+                }
+            });
+            
+            // Deduplicate URLs before returning
+            return [...new Set(allRssUrls)];
+        }
+
 
         // --- Global State & DOM References ---
         let feedContent; 
         let currentArticles = []; 
         let isIframeView = false;
         
+        // --- Persistence (localStorage) Functions ---
+        function saveSelection(category, subCategory) {
+            try {
+                localStorage.setItem(LAST_CATEGORY_KEY, category);
+                localStorage.setItem(LAST_SUB_CATEGORY_KEY, subCategory);
+            } catch (e) {
+                console.warn("localStorage is not available or write failed:", e);
+            }
+        }
+
+        function loadSelection() {
+            try {
+                const lastCategory = localStorage.getItem(LAST_CATEGORY_KEY);
+                const lastSubCategory = localStorage.getItem(LAST_SUB_CATEGORY_KEY);
+                return { category: lastCategory, subCategory: lastSubCategory };
+            } catch (e) {
+                console.warn("localStorage is not available or read failed:", e);
+                return { category: null, subCategory: null };
+            }
+        }
+
         // --- Modal Control Functions ---
         function showModal(title, content) {
             const modal = document.getElementById('modal');
@@ -187,7 +435,8 @@
             if (!jsonResponse || jsonResponse.status !== 'ok' || !jsonResponse.items) {
                 console.warn(`JSON response did not contain expected data for ${url}.`, jsonResponse);
                 if (jsonResponse.message) {
-                    showModal("Feed Loading Error", `The RSS feed could not be processed. The proxy returned the error: "${jsonResponse.message}". Please check the URL for validity or try again later.`);
+                    // 日本語メッセージを追加
+                    showModal("フィード読み込みエラー", `RSSフィードを処理できませんでした。プロキシからエラー「${jsonResponse.message}」が返されました。URLの有効性を確認するか、後で再試行してください。`);
                 }
                 return [];
             }
@@ -251,6 +500,7 @@
 
             } catch (error) {
                 if (attempt < MAX_RETRIES - 1) {
+                    console.error(`[NETWORK ERROR] Feed ${url} failed. Retrying in ${delay / 1000}s. Error: ${error.message}`);
                     await new Promise(r => setTimeout(r, delay));
                     return fetchRSSFeedSingle(url, attempt + 1);
                 } else {
@@ -266,8 +516,9 @@
 
             if (articles.length === 0) {
                 currentArticles = [];
-                if (!document.getElementById('modal').classList.contains('flex')) {
-                    feedContent.innerHTML = renderEmptyState(feedDisplayName, "このフィードから記事が見つかりませんでした。ソースが一時的に利用できないか、無効である可能性があります。", "2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2");
+                // Check if an error modal is already displayed (which would block this from running again)
+                if (!document.getElementById('modal').classList.contains('flex')) { 
+                    feedContent.innerHTML = renderEmptyState(feedDisplayName, "この記事から記事が見つかりませんでした。ソースが一時的に利用できないか、無効である可能性があります。", "2xl:col-span-5 xl:col-span-4 lg:col-span-3 md:col-span-2");
                 } else {
                     feedContent.innerHTML = ''; 
                 }
@@ -279,6 +530,8 @@
             const uniqueAndSortedArticles = articles
                 .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
                 .filter(article => {
+                    // Check for null/undefined title before processing
+                    if (!article.title) return false; 
                     const normalized = article.title.toLowerCase().replace(/[^\w\s]/g, '').trim();
                     if (seenNormalizedTitles.has(normalized)) return false; 
                     seenNormalizedTitles.add(normalized);
@@ -297,8 +550,8 @@
             const lowerSearchTerm = searchTerm.toLowerCase();
 
             const filtered = currentArticles.filter(article => {
-                const title = article.title.toLowerCase();
-                const snippet = article.snippet.toLowerCase();
+                const title = article.title ? article.title.toLowerCase() : '';
+                const snippet = article.snippet ? article.snippet.toLowerCase() : '';
                 const fullDescription = article.fullDescription ? article.fullDescription.toLowerCase() : '';
 
                 return title.includes(lowerSearchTerm) || 
@@ -389,7 +642,7 @@
 
             return `
                 <div class="col-span-full w-full">
-                    <div class="iframe-container rounded-xl shadow-2xl overflow-hidden">
+                    <div class="iframe-container overflow-hidden">
                         <iframe 
                             src="${iframeUrl}" 
                             frameborder="0" 
@@ -410,13 +663,53 @@
             </div>`;
         }
         
+        function showArticleDetails(encodedData) {
+            try {
+                const articleJson = decodeURIComponent(encodedData);
+                const article = JSON.parse(articleJson);
+
+                let displayContent = article.fullDescription || article.snippet;
+                
+                if (!displayContent || displayContent.trim().length < 5) {
+                    displayContent = `
+                        <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-lg mb-4">
+                            <p class="font-bold mb-1">コンテンツがフィードで利用できません</p>
+                            <p>このフィードアイテムには、記事全文が含まれていませんでした。利用可能なスニペットを表示しています。</p>
+                        </div>
+                        <div class="modal-body">${article.snippet}</div>
+                    `;
+                } else {
+                    displayContent = `<div class="modal-body">${displayContent}</div>`;
+                }
+                
+                const content = `
+                    <p class="text-sm font-medium text-gray-500 mb-4">${new Date(article.date).toLocaleString() || '日付 N/A'} | ${article.feedTitle}</p>
+                    <div id="articleContentWrapper" class="text-gray-700 leading-relaxed overflow-y-auto max-h-[70vh] mb-6">
+                        ${displayContent}
+                    </div>
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" 
+                       class="inline-block bg-primary text-white px-5 py-2 rounded-lg hover:bg-emerald-700 transition duration-150 font-medium shadow-md">
+                        全文を読む &rarr;
+                    </a>
+                `;
+                showModal(article.title, content);
+            } catch (e) {
+                console.error("記事の詳細のデコード中にエラーが発生しました:", e);
+                showModal("記事読み込みエラー", "記事の詳細を読み込むことができませんでした。");
+            }
+        }
+
         // --- Navigation Logic ---
 
         function renderCategoryNav() {
             const categoryNav = document.getElementById('categoryNav');
+            // Explicitly set non-active classes in HTML structure
+            // NOTE: The buttons themselves still retain a subtle border/shadow for better separation
+            const baseClasses = "nav-link px-4 py-2 rounded-full text-sm transition duration-150 flex items-center md:flex-shrink-0 bg-white text-gray-600 border border-gray-200 shadow-sm font-normal";
+
             categoryNav.innerHTML = Object.keys(RSS_FEEDS).map(categoryName => {
                 return `
-                    <button onclick="selectCategory('${categoryName}')" class="nav-link text-gray-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition duration-150 flex items-center" data-category="${categoryName}">
+                    <button onclick="selectCategory('${categoryName}')" class="${baseClasses}" data-category="${categoryName}">
                         <span class="text-lg mr-2">${RSS_FEEDS[categoryName].icon}</span>
                         <span>${categoryName}</span>
                     </button>
@@ -427,11 +720,13 @@
         function renderSubCategoryNav(categoryName) {
             const subCategoryNav = document.getElementById('subCategoryNav');
             const subCategories = RSS_FEEDS[categoryName].subCategories;
+            // Explicitly set non-active classes in HTML structure
+            const baseClasses = "sub-nav-link px-4 py-2 rounded-full text-sm transition duration-150 flex items-center bg-white text-gray-600 border border-gray-200 shadow-sm font-normal";
             
             subCategoryNav.innerHTML = subCategories.map(sub => {
                 return `
                     <button onclick="selectSubCategory('${categoryName}', '${sub.name}')" 
-                            class="sub-nav-link text-gray-600 px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-200 transition duration-150 flex items-center" 
+                            class="${baseClasses}" 
                             data-sub-category="${sub.name}">
                         ${sub.name}
                     </button>
@@ -445,23 +740,37 @@
             const subTitle = subCategoryName ? ` / ${subCategoryName}` : '';
             document.getElementById('activeSubCategoryTitle').textContent = subTitle;
 
+            // Define ACTIVE classes explicitly for maximum priority
+            const activeClasses = 'active !bg-primary !text-white !border-primary !shadow-lg !shadow-primary/50 !font-semibold';
+            // Define BASE classes explicitly (same as used in render functions)
+            const baseClasses = "bg-white text-gray-600 border border-gray-200 shadow-sm font-normal";
+
+            // Highlight Main Category
             document.querySelectorAll('#categoryNav .nav-link').forEach(link => {
-                link.classList.remove('active');
                 if (link.getAttribute('data-category') === categoryName) {
-                    link.classList.add('active');
+                    // Add active classes
+                    link.classList.add(...activeClasses.split(' ').filter(c => c));
+                    // Ensure the icon color matches the text color for the active state
+                    const icon = link.querySelector('span:first-child');
+                    if (icon) icon.classList.add('text-white');
+                } else {
+                    // Remove active classes and restore base classes
+                    link.classList.remove(...activeClasses.split(' ').filter(c => c));
+                    const icon = link.querySelector('span:first-child');
+                    if (icon) icon.classList.remove('text-white');
                 }
             });
 
+            // Highlight Subcategory
             document.querySelectorAll('#subCategoryNav .sub-nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            if (subCategoryName) {
-                const activeSubCategoryLink = document.querySelector(`#subCategoryNav .sub-nav-link[data-sub-category="${subCategoryName}"]`);
-                if (activeSubCategoryLink) {
-                    activeSubCategoryLink.classList.add('active');
+                if (link.getAttribute('data-sub-category') === subCategoryName) {
+                     // Add active classes
+                    link.classList.add(...activeClasses.split(' ').filter(c => c));
+                } else {
+                    // Remove active classes
+                    link.classList.remove(...activeClasses.split(' ').filter(c => c));
                 }
-            }
+            });
         }
 
         function toggleSearch(show) {
@@ -469,13 +778,37 @@
         }
 
         function selectCategory(categoryName) {
+            
+            // Check if the current category is "Japan News" and needs dynamic URL collection
+            if (categoryName === "Japan News") {
+                const allRssUrls = collectAllRssUrls();
+                // Set the URLs for the "全て (All Feeds)" subcategory dynamically
+                const allFeedsSub = RSS_FEEDS["Japan News"].subCategories.find(sub => sub.name.includes("全て"));
+                if (allFeedsSub) {
+                    allFeedsSub.url = allRssUrls;
+                }
+            }
+            
             renderSubCategoryNav(categoryName);
             
             const subCategories = RSS_FEEDS[categoryName].subCategories;
 
+            // Get saved subcategory name for this category, or default to the first one
+            const savedSelection = loadSelection();
+            let subCategoryToSelect = subCategories[0]?.name;
+
+            if (savedSelection.category === categoryName && savedSelection.subCategory) {
+                // Check if the saved subCategory actually exists in the current category
+                const isSubCategoryValid = subCategories.some(sub => sub.name === savedSelection.subCategory);
+                if (isSubCategoryValid) {
+                    subCategoryToSelect = savedSelection.subCategory;
+                }
+            }
+
+
             if (subCategories && subCategories.length > 0) {
-                // Automatically select the first subcategory
-                selectSubCategory(categoryName, subCategories[0].name);
+                // Automatically select the first subcategory or the saved one
+                selectSubCategory(categoryName, subCategoryToSelect);
             } else {
                 setActiveNav(categoryName, null);
                 toggleSearch(false);
@@ -485,6 +818,8 @@
 
         function selectSubCategory(categoryName, subCategoryName) {
             setActiveNav(categoryName, subCategoryName);
+            // Save the selection immediately after successful display
+            saveSelection(categoryName, subCategoryName);
 
             const category = RSS_FEEDS[categoryName];
             const subCategory = category.subCategories.find(sub => sub.name === subCategoryName);
@@ -550,8 +885,17 @@
             
             renderCategoryNav(); 
             
-            // Default load the 'Commodity Feeds' category
-            selectCategory('Commodity Feeds');
+            // --- Persistence Logic: Load saved selection or default ---
+            const saved = loadSelection();
+            const allCategoryNames = Object.keys(RSS_FEEDS);
+            
+            let categoryToLoad = allCategoryNames[0]; // Default to the first category
+            
+            if (saved.category && allCategoryNames.includes(saved.category)) {
+                categoryToLoad = saved.category;
+            }
+
+            selectCategory(categoryToLoad);
         };
 
     </script>
