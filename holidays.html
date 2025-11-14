@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Public Holiday Calendar</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Main Blue theme
+                        'primary': '#3498db', 
+                        'secondary': '#5DADE2', 
+                        'accent': '#facc15', // Amber 500 (Kept for contrast)
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }; 
+    </script>
+    <style>
+        /* Define the primary color as a CSS variable for custom styles */
+        :root {
+            --primary: #3498db;
+        }
+
+        body {
+            background-color: #f5f5f7; /* Light gray background */
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            /* Reduced padding on body */
+            padding: 10px; 
+        }
+        
+        .input-field {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px 10px; /* Reduced vertical padding */
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #f9fafb;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            /* Updated shadow color to RGB of #3498db (52, 152, 219) */
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+        /* Custom badge styles */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            line-height: 1;
+            min-width: 80px; /* Ensure badge has minimum width */
+            text-align: center;
+        }
+        
+        /* Updated Global badge to match the new blue theme */
+        .badge-global { 
+            background-color: #d6eaf8; /* Very light blue */
+            color: #1a5276; /* Darker blue text */
+        } 
+        
+        .badge-county { background-color: #fee2e2; color: #b91c1c; } /* Red (Local) */
+        
+        /* Updated Federal badge slightly */
+        .badge-federal { 
+            background-color: #e0f2fe; 
+            color: #21618c; 
+        } 
+        
+        .badge-other { background-color: #f5f5f5; color: #4b5563; } /* Gray (General Public) */
+        
+        /* Ensure the day and date wrap neatly */
+        .day-of-week {
+            font-weight: 700;
+            color: var(--primary); /* Uses the new primary color */
+            display: block; /* Force day of week onto its own line */
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Removed mt-10 from here to pull content up -->
+    <div class="w-full max-w-4xl p-4 sm:p-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4 text-center">Global Public Holiday Calendar</h1> <!-- Reduced mb-8 to mb-4 -->
+
+        <!-- --- Worldwide Holidays Section (Today & Next 3 days) --- -->
+        <div id="worldwideHolidaysSection" class="mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-lg"> <!-- Reduced mb-8 to mb-4 -->
+            <h2 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">International Holidays: Today & Next 3 Days</h2> <!-- Reduced text size, reduced mb-4 to mb-2, reduced pb-2 to pb-1 -->
+            
+            <div id="worldwideTableContainer" class="overflow-x-auto">
+                <table id="worldwideHolidayTable" class="min-w-full divide-y divide-gray-200 hidden">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <!-- Increased font size from text-xs to text-sm -->
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider w-1/4">Date</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider w-1/3">Holiday Name</th>
+                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase tracking-wider w-1/3">Country Names</th>
+                        </tr>
+                    </thead>
+                    <tbody id="worldwideHolidayResults" class="bg-white divide-y divide-gray-100">
+                        <!-- Worldwide holiday rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <p id="worldwideLoading" class="text-center text-blue-500 py-2">Loading worldwide holidays...</p> <!-- Reduced py-4 to py-2 -->
+            <p id="worldwideNoResults" class="text-center text-gray-500 py-2 hidden">No international public holidays in the next 4 days.</p> <!-- Reduced py-4 to py-2 -->
+        </div>
+        <!-- ----------------------------------------------------------- -->
+
+
+        <!-- Controls Section (Fields trigger fetch on change) -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-lg"> <!-- Reduced mb-8 to mb-4 -->
+            
+            <!-- Country Dropdown -->
+            <div class="flex-1">
+                <label for="countrySelect" class="block text-sm font-medium text-gray-700 mb-1">Select Country</label>
+                <select id="countrySelect" class="input-field w-full" aria-label="Select Country" disabled>
+                    <option value="">Loading countries...</option>
+                </select>
+            </div>
+
+            <!-- Year/Period Dropdown -->
+            <div class="flex-1">
+                <label for="yearSelect" class="block text-sm font-medium text-gray-700 mb-1">Select Period</label>
+                <select id="yearSelect" class="input-field w-full" aria-label="Select Year">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+            
+        </div>
+
+        <!-- Status Message Area -->
+        <div id="statusMessage" class="hidden p-3 mb-4 rounded-lg text-center" role="alert"></div> <!-- Reduced mb-8 to mb-4 -->
+        
+        <!-- Title for the Selected Country's Holidays -->
+        <div id="countryTitleContainer" class="text-xl font-semibold text-gray-800 mb-3 pb-1 hidden flex items-center"></div> <!-- Reduced mb-4 to mb-3, reduced pb-2 to pb-1 -->
+
+        <!-- Results Area -->
+        <div class="overflow-x-auto shadow-xl rounded-xl border border-gray-100 mb-4"> <!-- Reduced mb-10 to mb-4 -->
+            <table id="holidayTable" class="min-w-full divide-y divide-gray-200 hidden">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-sm font-bold uppercase tracking-wider w-1/3">Date</th> <!-- Reduced py-3 to py-2 -->
+                        <th class="px-4 py-2 text-left text-sm font-bold uppercase tracking-wider w-1/3">Holiday Name</th> <!-- Reduced py-3 to py-2 -->
+                        <th class="px-4 py-2 text-left text-sm font-bold uppercase tracking-wider w-1/3 hidden sm:table-cell">Scope / Type</th> <!-- Reduced py-3 to py-2 -->
+                    </tr>
+                </thead>
+                <tbody id="holidayResults" class="bg-white divide-y divide-gray-200">
+                    <!-- Holiday rows populated by JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <p id="noResults" class="text-center text-gray-500 mt-4 hidden">No public holidays found for the selected country and period.</p> <!-- Reduced mt-8 to mt-4 -->
+
+    </div>
+
+    <script>
+        // Data and API Configuration
+        const API_BASE_URL = "https://date.nager.at/api/v3/";
+        const AVAILABLE_COUNTRIES_URL = API_BASE_URL + "AvailableCountries";
+        const PUBLIC_HOLIDAYS_URL = API_BASE_URL + "PublicHolidays";
+        const NEXT_PUBLIC_HOLIDAYS_URL = API_BASE_URL + "NextPublicHolidays/"; 
+        const NEXT_PUBLIC_HOLIDAYS_WORLDWIDE_URL = API_BASE_URL + "NextPublicHolidaysWorldwide"; 
+
+        let availableCountries = []; 
+        let countryCodeToNameMap = {}; // Map: code -> full name
+        let countryNameToCodeMap = {}; // Map: full name -> code 
+        
+        // UI Element References (Main Table)
+        const countrySelect = document.getElementById('countrySelect');
+        const yearSelect = document.getElementById('yearSelect');
+        const statusMessage = document.getElementById('statusMessage');
+        const holidayResults = document.getElementById('holidayResults');
+        const holidayTable = document.getElementById('holidayTable');
+        const noResults = document.getElementById('noResults');
+        const countryTitleContainer = document.getElementById('countryTitleContainer'); 
+        
+        // UI Element References (Worldwide Table)
+        const worldwideHolidayResults = document.getElementById('worldwideHolidayResults');
+        const worldwideHolidayTable = document.getElementById('worldwideHolidayTable');
+        const worldwideLoading = document.getElementById('worldwideLoading');
+        const worldwideNoResults = document.getElementById('worldwideNoResults');
+
+        // State to prevent multiple concurrent fetches
+        let isFetching = false; 
+
+        /**
+         * Utility function to show a status or error message.
+         * @param {string} message The message content.
+         * @param {string} type 'success', 'error', or 'loading'.
+         */
+        function showMessage(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800', 'bg-yellow-100', 'text-yellow-800');
+            
+            if (type === 'error') {
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+            } else if (type === 'loading') {
+                statusMessage.classList.add('bg-blue-100', 'text-blue-800');
+            } else { // info/success
+                statusMessage.classList.add('bg-yellow-100', 'text-yellow-800');
+            }
+
+            // Hide after 5 seconds if not a loading message
+            if (type !== 'loading') {
+                setTimeout(() => statusMessage.classList.add('hidden'), 5000);
+            }
+        }
+        
+        /**
+         * Utility function to generate the flag HTML <img> tag.
+         * @param {string} countryCode The two-letter country code (e.g., 'US', 'DE').
+         * @returns {string} The HTML string for the flag image.
+         */
+        function getFlagHtml(countryCode) {
+            if (!countryCode) return '';
+            const code = countryCode.toLowerCase();
+            const flagUrl = `https://flagcdn.com/w20/${code}.png`;
+            // Fallback: simple text placeholder if flag fails to load
+            const fallbackUrl = `https://placehold.co/20x15/cccccc/333333?text=${countryCode}`;
+            const altText = `Flag of ${countryCodeToNameMap[countryCode] || countryCode}`;
+
+            return `<img src="${flagUrl}" 
+                         onerror="this.onerror=null;this.src='${fallbackUrl}'" 
+                         alt="${altText}" 
+                         class="inline-block rounded shadow-md border border-gray-200 mr-2" 
+                         style="width: 20px; height: 15px;">`;
+        }
+
+
+        /**
+         * Fetches the full list of available countries dynamically from the API, populates the maps,
+         * and then triggers the rendering of both holiday tables.
+         */
+        async function fetchAvailableCountries() {
+            showMessage("Loading available countries...", 'loading');
+            countrySelect.disabled = true;
+
+            try {
+                const response = await fetch(AVAILABLE_COUNTRIES_URL);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch country list.');
+                }
+                availableCountries = await response.json();
+                
+                // 1. Populate the country code to name maps
+                availableCountries.forEach(country => {
+                    countryCodeToNameMap[country.countryCode] = country.name;
+                    countryNameToCodeMap[country.name] = country.countryCode; 
+                });
+                
+                // 2. Fetch and render the worldwide holidays (Now the map is ready)
+                await fetchAndRenderWorldwideHolidays(); 
+
+                // 3. Populate dropdowns and fetch main calendar holidays
+                populateDropdowns();
+                fetchHolidays(); 
+                
+                statusMessage.classList.add('hidden'); 
+            } catch (error) {
+                console.error("Initialization Error:", error);
+                showMessage("Could not load the list of countries. Please check your connection or try refreshing.", 'error');
+                countrySelect.innerHTML = '<option value="">Error loading countries</option>';
+            } finally {
+                countrySelect.disabled = false;
+            }
+        }
+
+        /**
+         * Populates the country and year/period dropdowns.
+         */
+        function populateDropdowns() {
+            // Populate Country Dropdown
+            countrySelect.innerHTML = ''; 
+            const sortedCountries = availableCountries.sort((a, b) => a.name.localeCompare(b.name));
+
+            sortedCountries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.countryCode;
+                option.textContent = country.name;
+                countrySelect.appendChild(option);
+            });
+
+            // Set default country selection (US preferred)
+            if (countrySelect.querySelector('option[value="US"]')) {
+                countrySelect.value = 'US';
+            } else if (sortedCountries.length > 0) {
+                countrySelect.value = sortedCountries[0].countryCode;
+            }
+            
+            // Populate Year/Period Dropdown 
+            const currentYear = new Date().getFullYear();
+            yearSelect.innerHTML = ''; 
+
+            const nextOption = document.createElement('option');
+            nextOption.value = '365days';
+            nextOption.textContent = 'Next 365 Days';
+            yearSelect.appendChild(nextOption);
+
+            for (let year = currentYear; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            yearSelect.value = '365days'; 
+        }
+
+        /**
+         * Determines a more descriptive "type" or "scope" for the holiday.
+         */
+        function getHolidayScope(holiday) {
+            if (holiday.global) {
+                return { text: 'Global', className: 'badge-global' };
+            } 
+            
+            if (holiday.counties && holiday.counties.length > 0) {
+                const countyList = holiday.counties.map(c => c.split('-').pop()).join(', ');
+                return { text: `Local: ${countyList}`, className: 'badge-county', tooltip: holiday.counties.join(', ') };
+            } 
+            
+            if (holiday.type && holiday.type.toLowerCase().includes('federal')) {
+                 return { text: 'Federal', className: 'badge-federal' };
+            }
+            
+            return { text: 'Public', className: 'badge-other' };
+        }
+
+
+        /**
+         * Fetches holiday data from the Nager.Date API for a selected country.
+         */
+        async function fetchHolidays() {
+            if (isFetching) return;
+            isFetching = true;
+
+            const countryCode = countrySelect.value;
+            const period = yearSelect.value; 
+            const countryName = countrySelect.options[countrySelect.selectedIndex].textContent;
+
+            if (!countryCode || !period) {
+                showMessage("Please select both a country and a period.", 'error');
+                isFetching = false;
+                countryTitleContainer.classList.add('hidden');
+                return;
+            }
+            
+            let apiUrl = '';
+            let message = '';
+            
+            if (period === '365days') {
+                apiUrl = NEXT_PUBLIC_HOLIDAYS_URL + countryCode;
+                message = `Fetching upcoming holidays for ${countryName}...`;
+            } else {
+                apiUrl = `${PUBLIC_HOLIDAYS_URL}/${period}/${countryCode}`;
+                message = `Fetching holidays for ${countryName} in ${period}...`;
+            }
+
+            countrySelect.disabled = true;
+            yearSelect.disabled = true;
+            showMessage(message, 'loading');
+            
+            holidayResults.innerHTML = '';
+            holidayTable.classList.add('hidden');
+            noResults.classList.add('hidden');
+            countryTitleContainer.classList.add('hidden');
+            statusMessage.classList.remove('hidden');
+
+            try {
+                let response;
+                let data;
+                
+                const MAX_RETRIES = 3;
+                let delay = 1000;
+
+                for (let i = 0; i < MAX_RETRIES; i++) {
+                    response = await fetch(apiUrl);
+                    if (response.status === 429) { 
+                        if (i < MAX_RETRIES - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                            continue; 
+                        } else {
+                            throw new Error("Rate limit exceeded. Please try again later.");
+                        }
+                    }
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error(`The holiday data for ${countryName} is currently unavailable.`);
+                        }
+                        throw new Error(`API returned status ${response.status}: ${response.statusText}`);
+                    }
+                    data = await response.json();
+                    break; 
+                }
+                
+                // Update the title for the main table results with the flag
+                const flagHtml = getFlagHtml(countryCode);
+                const periodText = period === '365days' ? 'Next 365 Days' : period;
+                countryTitleContainer.innerHTML = `<span class="border-b-2 border-primary pb-1 flex items-center">${flagHtml}${countryName} Holidays (${periodText})</span>`;
+                countryTitleContainer.classList.remove('hidden');
+
+
+                renderHolidays(data);
+
+            } catch (error) {
+                console.error("Error fetching holidays:", error);
+                showMessage(`Error: ${error.message}`, 'error');
+                holidayTable.classList.add('hidden');
+                countryTitleContainer.classList.add('hidden');
+            } finally {
+                countrySelect.disabled = false;
+                yearSelect.disabled = false;
+                isFetching = false;
+                if (!statusMessage.classList.contains('bg-red-100')) {
+                    statusMessage.classList.add('hidden');
+                }
+            }
+        }
+
+        /**
+         * Renders the fetched holiday data into the main table.
+         * @param {Array<Object>} holidays Array of holiday objects.
+         */
+        function renderHolidays(holidays) {
+            holidayResults.innerHTML = '';
+            
+            if (!holidays || holidays.length === 0) {
+                holidayTable.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                countryTitleContainer.classList.add('hidden');
+                return;
+            }
+            
+            holidayTable.classList.remove('hidden');
+            noResults.classList.add('hidden');
+
+            holidays.forEach(holiday => {
+                const row = document.createElement('tr');
+                // Reduced py-3 to py-2 in the row/cell classes
+                row.className = 'hover:bg-gray-50 transition-colors duration-150';
+
+                // 1. Determine Scope/Type
+                const scope = getHolidayScope(holiday);
+
+                // 2. Format the Date and Day of Week
+                const dateObj = new Date(holiday.date); 
+                
+                const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                // Main table format: Month Name Day, Year
+                const formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                
+                const dateDisplay = `
+                    <span class="day-of-week">${dayOfWeek}</span>
+                    <span>${formattedDate}</span>
+                `;
+
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-sm font-medium text-gray-900 w-1/3">
+                        ${dateDisplay}
+                    </td>
+                    <td class="px-4 py-2 whitespace-normal text-sm text-gray-600 w-1/3">
+                        ${holiday.name}
+                    </td>
+                    <td class="px-4 py-2 text-sm text-gray-700 w-1/3 hidden sm:table-cell">
+                        <span class="badge ${scope.className}" title="${scope.tooltip || ''}">
+                            ${scope.text}
+                        </span>
+                    </td>
+                `;
+                holidayResults.appendChild(row);
+            });
+        }
+        
+        // --- Worldwide Holiday Functions ---
+
+        async function fetchAndRenderWorldwideHolidays() {
+            worldwideLoading.classList.remove('hidden');
+            worldwideHolidayTable.classList.add('hidden');
+            worldwideNoResults.classList.add('hidden');
+            
+            try {
+                const response = await fetch(NEXT_PUBLIC_HOLIDAYS_WORLDWIDE_URL);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch worldwide holiday list.');
+                }
+                const data = await response.json();
+                
+                // Ensure countryCodeToNameMap is available before processing
+                if (Object.keys(countryCodeToNameMap).length === 0) {
+                    // This should not happen now, but is a safe guard
+                    throw new Error("Country mapping is not available yet.");
+                }
+
+                const processedHolidays = processWorldwideHolidays(data);
+                renderWorldwideHolidays(processedHolidays);
+
+            } catch (error) {
+                console.error("Worldwide Holiday Error:", error);
+                worldwideLoading.textContent = "Error loading worldwide holidays. Please try reloading.";
+                worldwideLoading.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Processes and groups worldwide holidays for today and the next 3 days, using full country names.
+         * @param {Array<Object>} holidays Raw list of upcoming worldwide holidays.
+         * @returns {Array<Object>} Grouped and filtered holiday list.
+         */
+        function processWorldwideHolidays(holidays) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const endWindow = new Date();
+            endWindow.setDate(today.getDate() + 3); 
+            endWindow.setHours(23, 59, 59, 999);
+
+            const filteredHolidays = holidays.filter(holiday => {
+                const holidayDate = new Date(holiday.date);
+                holidayDate.setHours(0, 0, 0, 0); 
+                
+                return holidayDate.getTime() >= today.getTime() && holidayDate.getTime() <= endWindow.getTime();
+            });
+
+            const groupedHolidays = {};
+            
+            filteredHolidays.forEach(holiday => {
+                const key = `${holiday.date}-${holiday.name}`;
+                
+                if (!groupedHolidays[key]) {
+                    groupedHolidays[key] = {
+                        date: holiday.date,
+                        name: holiday.name,
+                        countryNames: new Set(),
+                    };
+                }
+                
+                // Use the fully loaded map for the name
+                const countryName = countryCodeToNameMap[holiday.countryCode] || holiday.countryCode; 
+                groupedHolidays[key].countryNames.add(countryName); 
+            });
+            
+            const finalResult = Object.values(groupedHolidays).sort((a, b) => {
+                return new Date(a.date) - new Date(b.date);
+            }).map(item => ({
+                ...item,
+                countries: Array.from(item.countryNames).sort().join(', ') 
+            }));
+            
+            return finalResult;
+        }
+
+
+        /**
+         * Renders the processed worldwide holiday data into the new table, including flags.
+         * @param {Array<Object>} holidays Grouped holiday objects.
+         */
+        function renderWorldwideHolidays(holidays) {
+            worldwideHolidayResults.innerHTML = '';
+            worldwideLoading.classList.add('hidden'); 
+
+            if (holidays.length === 0) {
+                worldwideNoResults.classList.remove('hidden');
+                return;
+            }
+            
+            worldwideHolidayTable.classList.remove('hidden');
+            
+            holidays.forEach(holiday => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors duration-150';
+
+                // Format Date
+                const dateObj = new Date(holiday.date); 
+                const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                // Date format to match main table: Month Name Day, Year
+                const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                
+                // Adjusted date display to use text-sm for consistency
+                const dateDisplay = `
+                    <span class="day-of-week text-sm text-primary">${dayOfWeek}</span>
+                    <span class="text-sm text-gray-700 font-medium">${formattedDate}</span>
+                `;
+                
+                // Process country names to include flags
+                const countryNames = holiday.countries.split(', ').filter(name => name.trim() !== '');
+                const tooltipText = countryNames.join(', ');
+                
+                let countryElements = countryNames.map(name => {
+                    const code = countryNameToCodeMap[name]; 
+                    // Generate flag HTML using the country code
+                    const flagHtml = code ? getFlagHtml(code) : '';
+                    // Wrap flag and name for inline display and wrapping
+                    return `<span class="inline-flex items-center whitespace-nowrap mr-3 mb-1">${flagHtml}<span class="text-gray-700">${name}</span></span>`;
+                });
+                
+                // Truncate for the cell display (5 flags + names max)
+                const displayCount = 5; 
+                let cellDisplayHtml = countryElements.slice(0, displayCount).join('');
+                
+                const remainingCount = countryNames.length - displayCount;
+                if (remainingCount > 0) {
+                    cellDisplayHtml += `<span class="text-sm text-gray-500 ml-1">, +${remainingCount} more</span>`; // Ensuring text-sm here too
+                }
+
+                row.innerHTML = `
+                    <td class="px-4 py-2 text-left text-sm font-medium w-1/4">
+                        ${dateDisplay}
+                    </td>
+                    <td class="px-4 py-2 whitespace-normal text-sm text-gray-700 w-1/3">
+                        ${holiday.name}
+                    </td>
+                    <!-- Increased font size for the cell from text-xs to text-sm -->
+                    <td class="px-4 py-2 text-sm w-1/3 cursor-help" title="${tooltipText}">
+                        <div class="flex flex-wrap">
+                            ${cellDisplayHtml}
+                        </div>
+                    </td>
+                `;
+                worldwideHolidayResults.appendChild(row);
+            });
+        }
+
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAvailableCountries(); 
+            
+            countrySelect.addEventListener('change', fetchHolidays);
+            yearSelect.addEventListener('change', fetchHolidays);
+        });
+
+    </script>
+</body>
+</html>
