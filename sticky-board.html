@@ -208,7 +208,7 @@
         // Global State & Constants
         let highestZIndex = 1;
         let isDragging = false;
-        let isResizing = false;
+        let isResizing = false; // This is a global flag, used to prevent creating notes while moving/resizing
         let dragTimer = 0; 
         
         // In-memory store: {id: {type, content (text or image dataURL), x, y, z, ...}}
@@ -702,12 +702,14 @@
             // --- RESIZING LOGIC ---
             let initialMouseX, initialMouseY, initialWidth, initialHeight;
             let currentWidth, currentHeight;
+            let isLocalResizing = false; // New local flag for this specific artifact's resizing state
 
             const resizeStart = (e) => {
                 e.stopPropagation();
                 e.preventDefault(); 
 
-                isResizing = true;
+                isLocalResizing = true;
+                isResizing = true; // Set global flag to prevent note creation
                 bringToFront(artifact);
 
                 // FIX: Use ternary operator to safely get coordinates
@@ -719,10 +721,16 @@
                 
                 initialWidth = artifact.offsetWidth;
                 initialHeight = artifact.offsetHeight;
+                
+                // Attach global listeners for move and end events ONLY when starting a resize
+                document.addEventListener('mousemove', resize);
+                document.addEventListener('mouseup', resizeEnd);
+                document.addEventListener('touchmove', resize);
+                document.addEventListener('touchend', resizeEnd);
             }
 
             const resize = (e) => {
-                if (!isResizing) return;
+                if (!isLocalResizing) return;
                 e.preventDefault(); 
 
                 // FIX: Use ternary operator to safely get coordinates
@@ -741,26 +749,27 @@
             }
 
             const resizeEnd = () => {
-                if (!isResizing) return;
+                if (!isLocalResizing) return;
 
-                isResizing = false;
+                isLocalResizing = false;
+                isResizing = false; // Reset global flag
                 
                 if (currentWidth && currentHeight) {
                     saveArtifact(id, { width: currentWidth, height: currentHeight });
                 }
                 currentWidth = undefined;
                 currentHeight = undefined;
+                
+                // Detach global listeners immediately after resize ends
+                document.removeEventListener('mousemove', resize);
+                document.removeEventListener('mouseup', resizeEnd);
+                document.removeEventListener('touchmove', resize);
+                document.removeEventListener('touchend', resizeEnd);
             }
             
-            // Attach mouse events for resizing
+            // Attach mouse and touch start events for resizing
             resizeHandle.addEventListener('mousedown', resizeStart);
-            document.addEventListener('mouseup', resizeEnd);
-            document.addEventListener('mousemove', resize);
-
-            // Attach touch events for resizing
             resizeHandle.addEventListener('touchstart', resizeStart);
-            document.addEventListener('touchend', resizeEnd);
-            document.addEventListener('touchmove', resize);
             
             // --- DRAGGING LOGIC ---
 
@@ -786,7 +795,7 @@
                 
                 isLocalDragging = true;
                 artifactMoved = false;
-                isDragging = true;
+                isDragging = true; // Global flag to prevent note creation
                 clearTimeout(dragTimer);
 
                 bringToFront(artifact);
@@ -797,6 +806,12 @@
 
                 initialX = clientX - artifact.offsetLeft;
                 initialY = clientY - artifact.offsetTop;
+                
+                // Attach global listeners for drag and end events ONLY when starting a drag
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+                document.addEventListener('touchmove', drag);
+                document.addEventListener('touchend', dragEnd);
             }
 
             const drag = (e) => {
@@ -807,9 +822,6 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                const dx = clientX - initialX;
-                const dy = clientY - initialY;
-                
                 currentX = clientX - initialX;
                 currentY = clientY - initialY;
 
@@ -832,15 +844,17 @@
                 // Update offsets for the next drag start
                 xOffset = currentX; 
                 yOffset = currentY;
+                
+                // Detach global listeners immediately after drag ends
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+                document.removeEventListener('touchmove', drag);
+                document.removeEventListener('touchend', dragEnd);
             }
 
-            // Attach drag events to the artifact body
+            // Attach drag start events to the artifact body
             artifact.addEventListener('mousedown', dragStart);
-            document.addEventListener('mouseup', dragEnd);
-            document.addEventListener('mousemove', drag);
             artifact.addEventListener('touchstart', dragStart);
-            document.addEventListener('touchend', dragEnd);
-            artifact.addEventListener('touchmove', drag);
 
             // Note: The artifact is appended to the container in renderNotes or handlePaste.
         }
