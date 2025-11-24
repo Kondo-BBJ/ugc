@@ -175,7 +175,12 @@
 <body id="stickyBoard" class="p-0">
 
     <!-- Header and Info Box -->
-    <header class="header bg-transparent py-6 px-6 mb-4 text-center">
+    <header class="header bg-transparent py-6 px-6 mb-4 text-center relative">
+        <!-- Save Status Indicator -->
+        <div id="save-status" class="absolute top-6 right-6 text-xs font-medium text-gray-400 italic transition-colors duration-300">
+            Loading...
+        </div>
+
         <!-- Title Change: Added flex and moved SVG icon here, increased size to w-8 h-8 -->
         <h1 class="text-4xl font-extrabold text-gray-800 mb-2 flex items-center justify-center">
             <svg class="w-8 h-8 mr-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -269,60 +274,214 @@
             return 'note-' + crypto.randomUUID();
         }
 
-        // --- LOCAL STORAGE FUNCTIONS ---
+        // --- INDEXED DB FUNCTIONS (Robust Storage) ---
         
-        /**
-         * Saves the current in-memory notes object to localStorage.
-         */
-        function saveNotes() {
-            localStorage.setItem('stickyNotesData', JSON.stringify(notes));
+        const DB_NAME = 'StickyBoardDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'notes';
+
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("Database error: " + event.target.errorCode);
+                    updateSaveStatus("Storage Error", true);
+                    reject(event.target.error);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: "id" });
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+            });
+        }
+
+        function updateSaveStatus(text, isError = false) {
+            const el = document.getElementById('save-status');
+            el.textContent = text;
+            if (isError) {
+                el.classList.remove('text-gray-400', 'text-green-500');
+                el.classList.add('text-red-500');
+            } else {
+                el.classList.remove('text-gray-400', 'text-red-500');
+                el.classList.add('text-green-500');
+                // Fade out back to gray after a while
+                setTimeout(() => {
+                    el.classList.remove('text-green-500');
+                    el.classList.add('text-gray-400');
+                }, 2000);
+            }
         }
 
         /**
-         * Loads notes from localStorage.
+         * Saves a single artifact to IndexedDB.
          */
-        function loadNotes() {
-            const stored = localStorage.getItem('stickyNotesData');
-            if (stored) {
-                try {
-                    notes = JSON.parse(stored);
-                    
-                    Object.values(notes).forEach(note => {
-                        // Ensure compatibility with old notes and new properties
-                        if (note.type === 'text') {
-                             Object.keys(DEFAULT_NOTE_PROPS).forEach(key => {
-                                if (note[key] === undefined) {
-                                    note[key] = DEFAULT_NOTE_PROPS[key];
-                                }
-                            });
-                        } else if (note.type === 'image') {
-                            Object.keys(DEFAULT_IMAGE_PROPS).forEach(key => {
-                                if (note[key] === undefined) {
-                                    note[key] = DEFAULT_IMAGE_PROPS[key];
-                                }
-                            });
-                        } else {
-                            // If type is missing (legacy notes), default to 'text'
-                             note.type = 'text';
-                             Object.keys(DEFAULT_NOTE_PROPS).forEach(key => {
-                                if (note[key] === undefined) {
-                                    note[key] = DEFAULT_NOTE_PROPS[key];
-                                }
-                            });
-                        }
+        async function saveArtifactToDB(data) {
+            if (!db) await initDB();
+            updateSaveStatus("Saving...");
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                // Ensure ID is present in data for keyPath
+                const request = store.put(data);
 
-                        if (note.z > highestZIndex) {
-                            highestZIndex = note.z;
-                        }
+                request.onsuccess = () => {
+                    updateSaveStatus("Saved");
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error saving note:", event.target.error);
+                    updateSaveStatus("Save Failed", true);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        /**
+         * Deletes an artifact from IndexedDB.
+         */
+        async function deleteArtifactFromDB(id) {
+            if (!db) await initDB();
+            updateSaveStatus("Saving...");
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+
+                request.onsuccess = () => {
+                    updateSaveStatus("Saved");
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    console.error("Error deleting note:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        /**
+         * Loads all notes from IndexedDB.
+         */
+        async function loadNotesFromDB() {
+            if (!db) await initDB();
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    const result = event.target.result;
+                    // Convert array back to object map
+                    const notesMap = {};
+                    result.forEach(note => {
+                        notesMap[note.id] = note;
                     });
+                    resolve(notesMap);
+                };
+
+                request.onerror = (event) => {
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        /**
+         * Migration logic to move data from old localStorage to IndexedDB.
+         */
+        function migrateFromLocalStorage() {
+            const storedJSON = localStorage.getItem('stickyNotesData');
+            if (storedJSON) {
+                try {
+                    const oldNotes = JSON.parse(storedJSON);
+                    // Migrate each note to DB
+                    Object.entries(oldNotes).forEach(([id, data]) => {
+                        // Ensure data has the ID property for the keyPath
+                        data.id = id;
+                        saveArtifactToDB(data);
+                    });
+                    // Optional: Clear old storage to avoid double loading later
+                    // localStorage.removeItem('stickyNotesData'); 
+                    return oldNotes;
                 } catch (e) {
-                    console.error("Error parsing stored notes from localStorage. Starting with empty board.", e);
-                    notes = {};
+                    console.error("Migration failed", e);
                 }
             }
-            renderNotes();
+            return null;
+        }
+
+        /**
+         * Main load function.
+         */
+        async function loadNotes() {
+            try {
+                await initDB();
+                let loadedNotes = await loadNotesFromDB();
+                
+                // If DB is empty, try migrating from localStorage
+                if (Object.keys(loadedNotes).length === 0) {
+                    const migrated = migrateFromLocalStorage();
+                    if (migrated) {
+                        loadedNotes = migrated;
+                    }
+                }
+
+                notes = loadedNotes;
+
+                // Process notes for rendering
+                Object.values(notes).forEach(note => {
+                    // Ensure compatibility with old notes and new properties
+                    if (note.type === 'text') {
+                            Object.keys(DEFAULT_NOTE_PROPS).forEach(key => {
+                            if (note[key] === undefined) {
+                                note[key] = DEFAULT_NOTE_PROPS[key];
+                            }
+                        });
+                    } else if (note.type === 'image') {
+                        Object.keys(DEFAULT_IMAGE_PROPS).forEach(key => {
+                            if (note[key] === undefined) {
+                                note[key] = DEFAULT_IMAGE_PROPS[key];
+                            }
+                        });
+                    } else {
+                        // If type is missing (legacy notes), default to 'text'
+                            note.type = 'text';
+                            Object.keys(DEFAULT_NOTE_PROPS).forEach(key => {
+                            if (note[key] === undefined) {
+                                note[key] = DEFAULT_NOTE_PROPS[key];
+                            }
+                        });
+                    }
+
+                    if (note.z > highestZIndex) {
+                        highestZIndex = note.z;
+                    }
+                });
+                
+                renderNotes();
+                updateSaveStatus("Loaded");
+
+            } catch (e) {
+                console.error("Error loading notes:", e);
+                updateSaveStatus("Error Loading", true);
+            }
+
             document.getElementById('stickyBoard').addEventListener('click', handleBoardClick);
-            document.addEventListener('paste', handlePaste); // Add paste listener
+            document.addEventListener('paste', handlePaste);
         }
         
         /**
@@ -349,7 +508,7 @@
         // --- LOCAL CRUD OPERATIONS ---
         
         /**
-         * Updates the in-memory artifact object and saves to localStorage.
+         * Updates the in-memory artifact object and saves to DB.
          */
         function saveArtifact(id, data) {
             if (!notes[id]) {
@@ -360,22 +519,25 @@
                     notes[id] = { ...DEFAULT_NOTE_PROPS, z: highestZIndex };
                 }
             }
-            notes[id] = { ...notes[id], ...data };
-            saveNotes();
+            
+            // Merge updates
+            notes[id] = { ...notes[id], ...data, id: id }; // Ensure ID is set in object
+            
+            // Save to IndexedDB
+            saveArtifactToDB(notes[id]);
         }
 
         /**
-         * Deletes a sticky note or image pin from the in-memory object and localStorage.
+         * Deletes a sticky note or image pin from the in-memory object and DB.
          */
         function deleteArtifact(id) {
             delete notes[id];
+            deleteArtifactFromDB(id);
             
             const artifactEl = document.getElementById(id);
             if (artifactEl) {
                 artifactEl.remove();
             }
-            
-            saveNotes();
         }
 
 
@@ -652,7 +814,7 @@
                             // Rerender all notes to update Z-index display and ensure new element is appended
                             renderNotes();
                             
-                            showNotification("Image successfully pasted and pinned!");
+                            // Notification removed here as requested
                         };
                         reader.readAsDataURL(blob);
                         return; // Process one image and stop
@@ -693,8 +855,88 @@
                 deleteArtifact(id);
             });
             artifact.appendChild(deleteBtn);
+
+            // 2. Copy Button (for Image Pins only)
+            if (artifact.getAttribute('data-type') === 'image') {
+                const copyBtn = document.createElement('div');
+                copyBtn.className = 'delete-btn'; // Reuse delete-btn style class
+                // Override positioning and style for Copy
+                copyBtn.style.right = '35px'; // Move to the left of the delete button
+                copyBtn.style.color = '#3b82f6'; // Blue text
+                copyBtn.style.borderColor = '#3b82f6'; // Blue border
+                copyBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                copyBtn.textContent = '⿻';
+                copyBtn.title = 'Copy Image';
+                
+                copyBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const img = artifact.querySelector('img');
+                    if (!img || !img.src) return;
+
+                    // Try standard API first (might work in some contexts, good to keep if permissions change)
+                    try {
+                        const res = await fetch(img.src);
+                        const blob = await res.blob();
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ [blob.type]: blob })
+                        ]);
+                        showNotification('Image copied to clipboard!', 'success');
+                        return;
+                    } catch (err) {
+                        console.warn('Clipboard API failed, trying fallback...', err);
+                    }
+
+                    // Fallback: execCommand with RENDERED Element
+                    // To support Paint in restricted environments, we attempt to place 
+                    // a virtually visible (but transparent) element on screen.
+                    try {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.contentEditable = true;
+                        
+                        // CRITICAL FIX: Make it "visible" to the browser's layout engine, just transparent.
+                        tempDiv.style.position = 'fixed';
+                        tempDiv.style.left = '0';
+                        tempDiv.style.top = '0';
+                        tempDiv.style.opacity = '0.01'; // Nearly invisible
+                        tempDiv.style.zIndex = '-1';
+                        tempDiv.style.pointerEvents = 'none';
+                        
+                        document.body.appendChild(tempDiv);
+
+                        const imgClone = document.createElement('img');
+                        imgClone.src = img.src;
+                        // Ensure image has size to be rendered
+                        imgClone.style.maxWidth = '500px'; 
+                        tempDiv.appendChild(imgClone);
+
+                        // Wait a micro-tick to ensure render? Usually synchronous for layout, 
+                        // but safety first for some browsers.
+                        
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNode(imgClone);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        const successful = document.execCommand('copy');
+                        
+                        // Cleanup
+                        selection.removeAllRanges();
+                        document.body.removeChild(tempDiv);
+
+                        if (successful) {
+                            // Success
+                        } else {
+                            throw new Error('execCommand returned false');
+                        }
+                    } catch (err) {
+                        console.error('Copy failed:', err);
+                    }
+                });
+                artifact.appendChild(copyBtn);
+            }
             
-            // 2. Resizing Handle
+            // 3. Resizing Handle
             const resizeHandle = document.createElement('div');
             resizeHandle.className = 'resize-handle';
             artifact.appendChild(resizeHandle);
@@ -787,7 +1029,8 @@
                 }
                 
                 // Allow dragging on the artifact itself, but ignore clicks on delete/resize handles
-                if (e.target.classList.contains('delete-btn') || e.target.classList.contains('resize-handle')) {
+                // Also ensure we don't start dragging if the copy button was clicked
+                if (e.target.classList.contains('delete-btn') || e.target.classList.contains('resize-handle') || e.target.textContent === '⿻') {
                     return;
                 }
 
