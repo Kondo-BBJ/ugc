@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Boardroom Strategy Simulator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Load Marked for Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        .section-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #10b981; /* Emerald 500 */
+            transition: background-color 0.15s;
+        }
+        .btn-primary:hover {
+            background-color: #059669; /* Emerald 600 */
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .discussion-turn {
+            margin-bottom: 0.5rem; 
+            padding: 0.75rem; 
+        }
+
+        /* Hidden textarea for copy mechanism */
+        #tempTextAreaForCopy {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 1px; 
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto"> 
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800 flex items-center justify-center">
+                🎯 Boardroom Strategy Simulator
+            </h1>
+            <!-- Updated On-Screen Subtitle -->
+            <p class="text-xl text-gray-600 mt-2">AI-Powered Simulated Discussions, Real Decisions & Action Plans, and Meeting Minutes</p>
+        </header>
+        
+        <!-- Meeting Setup Section -->
+        <div class="section-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">1. Meeting Configuration</h2>
+            
+            <!-- FIXED LAYOUT: Now uses md:grid-cols-4 to ensure 4 columns on all wider screens -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                
+                <!-- 1. Date Input -->
+                <div>
+                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                        type="date"
+                        id="meetingDate"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                </div>
+
+                <!-- 2. Time (From) Input -->
+                <div>
+                    <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Time (From)</label>
+                    <input
+                        type="time"
+                        id="startTime"
+                        value="09:00"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                </div>
+
+                <!-- 3. Time (To) Input -->
+                <div>
+                    <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">Time (To)</label>
+                    <input
+                        type="time"
+                        id="endTime"
+                        value="11:00"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                </div>
+
+                <!-- 4. Place Input -->
+                <div>
+                    <label for="place" class="block text-sm font-medium text-gray-700 mb-1">Place</label>
+                    <input
+                        type="text"
+                        id="place"
+                        placeholder="e.g., Executive Boardroom (Floor 42)"
+                        value="Executive Boardroom (Floor 42)"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="meetingTitle" class="block text-sm font-medium text-gray-700 mb-1">Meeting Title</label>
+                <input type="text" id="meetingTitle" value="H2 Commodity Portfolio Strategy: Geopolitical Risk Assessment" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Annual Budget Planning">
+            </div>
+            
+            <div class="mb-6">
+                <label for="agenda" class="block text-sm font-medium text-gray-700 mb-1">Meeting Agenda (What needs to be discussed?)</label>
+                <textarea id="agenda" rows="4" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., Review Q2 financial performance, approve budget for Project X, discuss the new market entry strategy for Asia.">Review the current exposure to Wheat futures given the Black Sea political tensions. Discuss and approve the proposal to increase leverage on the Copper book by 15%, contingent on Risk Manager sign-off. Review compliance training schedule.</textarea>
+            </div>
+
+            <h3 class="text-xl font-semibold text-gray-800 mb-3 border-b border-dashed pb-2">Participants</h3>
+            <div id="participantsContainer" class="space-y-4 mb-4">
+                <!-- Participant rows will be injected here -->
+            </div>
+            
+            <button id="addParticipantBtn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition">
+                + Add Participant
+            </button>
+        </div>
+
+        <!-- Simulation Control Section -->
+        <div class="section-card flex justify-center">
+            <button id="runMeetingBtn" class="btn-primary w-full md:w-auto px-8 py-3 rounded-xl text-white text-lg font-semibold flex items-center justify-center shadow-lg hover:shadow-xl disabled:bg-gray-400">
+                <div id="loadingIndicator" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span id="buttonText">Run Simulated Board Meeting & Generate Documents</span>
+            </button>
+        </div>
+
+        <!-- Results Section (Initially Hidden) -->
+        <div id="resultsSection" class="section-card hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">2. Generated Documents</h2>
+
+            <!-- Document Selection Tabs -->
+            <div class="flex border-b border-gray-200 mb-4">
+                <button data-doc="script" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Discussion Script</button>
+                <button data-doc="minutes" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Meeting Minutes</button>
+                <button data-doc="decisions" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150 mr-2">Key Decisions</button>
+                <button data-doc="actionplan" class="doc-tab px-4 py-2 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:border-emerald-500 hover:text-emerald-500 transition duration-150">Action Plan</button>
+            </div>
+
+            <!-- Document Output Area -->
+            <div id="documentOutput" class="p-4 bg-gray-50 border border-gray-200 rounded-lg overflow-y-auto text-sm">
+                <!-- Content will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Export Controls (Initially Hidden) -->
+        <div id="exportControlsSection" class="section-card hidden flex justify-center">
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                
+                <!-- Copy Button -->
+                <button id="copyDocBtn" class="flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition focus:ring-2 focus:ring-indigo-400 shadow-lg" title="Copy text of current tab with meeting metadata">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    Copy to Clipboard
+                </button>
+                
+                <!-- Download Button -->
+                <button id="downloadDocBtn" class="flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 transition focus:ring-2 focus:ring-green-400 shadow-lg" title="Download current tab as a text file">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download Document
+                </button>
+
+            </div>
+        </div>
+        
+        <!-- Hidden textarea for functionality -->
+        <textarea id="tempTextAreaForCopy" rows="1"></textarea>
+
+        <!-- Error/Message Box -->
+        <div id="messageBox" class="hidden fixed bottom-5 right-5 p-4 rounded-lg shadow-xl text-white font-medium z-50"></div>
+
+    </div>
+
+    <script type="module">
+        // --- API Configuration ---
+        // Using the proxy URL provided by the user
+        const API_URL = 'https://gemini-proxy-80hv.onrender.com/gemini';
+        
+        // --- Escaping Utility for Template Literals ---
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;')
+                      .replace(/`/g, '&#96;')
+                      .replace(/\n/g, ' ')
+                      .replace(/\r/g, ' ');
+        }
+        
+        function getTodayDateString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            let h = hash % 360;
+            let s = 50 + (hash % 10);
+            let l = 90 + (hash % 5);
+            const bgColor = `hsl(${h}, ${s}%, ${l}%)`;
+            const textColor = '#1f2937';
+            return { bg: bgColor, text: textColor };
+        }
+
+
+        // Comprehensive list of roles categorized by trading division
+        const ROLES_BY_DIVISION = {
+            'Executives': [
+                'CEO (Chief Executive Officer)', 
+                'CFO (Chief Financial Officer)', 
+                'COO (Chief Operating Officer)', 
+                'Managing Directors (Regions)'
+            ],
+            'Front Office (Revenue-Generating)': [
+                'Head of Trading',
+                '— Commodity Traders',
+                '— Portfolio Managers',
+                '— Analysts (Investment/Research)',
+                '— Quantitative Researchers',
+                'Sales & Marketing Director' 
+            ],
+            'Middle Office (Risk & Control)': [
+                'Chief Risk Officer (CRO)', 
+                '— Risk Managers', 
+                '— Compliance Officers', 
+                '— Performance Analysts'
+            ],
+            'Back Office (Support & Operations)': [
+                'Operations Director', 
+                '— Logistics & Settlements',
+                '— Trade Support',
+                'Finance Managers / Controllers', 
+                'Legal Counsel',
+                'IT & Systems Managers', 
+                'HR Director'
+            ]
+        };
+
+
+        const PERSONALITIES = ['Progressive', 'Conservative', 'Risk-Averse', 'Aggressive', 'Data-Driven', 'Optimistic', 'Skeptical', 'Compliance-Focused'];
+
+        // --- DOM Elements ---
+        const participantsContainer = document.getElementById('participantsContainer');
+        const addParticipantBtn = document.getElementById('addParticipantBtn');
+        const runMeetingBtn = document.getElementById('runMeetingBtn');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const buttonText = document.getElementById('buttonText');
+        const resultsSection = document.getElementById('resultsSection');
+        const messageBox = document.getElementById('messageBox');
+        const exportControlsSection = document.getElementById('exportControlsSection');
+        const documentOutput = document.getElementById('documentOutput');
+        const docTabs = document.querySelectorAll('.doc-tab');
+        
+        // Export Buttons
+        const copyDocBtn = document.getElementById('copyDocBtn');
+        const downloadDocBtn = document.getElementById('downloadDocBtn');
+        const tempTextAreaForCopy = document.getElementById('tempTextAreaForCopy');
+
+
+        let documents = {};
+        let currentTab = 'script'; // Default to script
+
+        // --- UI Functions ---
+
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `fixed bottom-5 right-5 p-4 rounded-lg shadow-xl font-medium z-50 transition-transform duration-300 transform translate-x-0`;
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-600');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-600');
+            } else {
+                messageBox.classList.add('bg-blue-600');
+            }
+
+            setTimeout(() => {
+                messageBox.classList.add('translate-x-full');
+            }, 5000);
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5500);
+            messageBox.classList.remove('hidden');
+        }
+
+        function generateRoleOptions(defaultRole) {
+            let optionsArray = [];
+            for (const division in ROLES_BY_DIVISION) {
+                optionsArray.push(`<optgroup label="${escapeHtml(division)}">`); 
+                ROLES_BY_DIVISION[division].forEach(role => {
+                    optionsArray.push(`<option value="${escapeHtml(role)}" ${role === defaultRole ? 'selected' : ''}>${escapeHtml(role)}</option>`);
+                });
+                optionsArray.push(`</optgroup>`);
+            }
+            return optionsArray.join('');
+        }
+
+        function createParticipantRow(id, defaultRole, defaultName = '', defaultPersonality = PERSONALITIES[0]) {
+            const row = document.createElement('div');
+            row.id = `participant-row-${id}`;
+            row.className = 'flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 items-end p-3 border border-gray-200 rounded-lg bg-gray-50';
+            
+            const roleOptions = generateRoleOptions(defaultRole);
+            const personalityOptions = PERSONALITIES.map(p => `<option value="${escapeHtml(p)}" ${p === defaultPersonality ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+            const escapedDefaultName = escapeHtml(defaultName);
+
+            row.innerHTML = `
+                <div class="flex-1 w-full min-w-[150px]">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Role / Division</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 role-select">
+                        ${roleOptions}
+                    </select>
+                </div>
+                <div class="flex-1 w-full min-w-[100px]">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" value="${escapedDefaultName}" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 name-input" placeholder="e.g., Alex Chen">
+                </div>
+                <div class="flex-1 w-full min-w-[120px]">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Personality</label>
+                    <select class="w-full p-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 personality-select">
+                        ${personalityOptions}
+                    </select>
+                </div>
+                <button type="button" class="w-full sm:w-auto px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition remove-btn" data-id="${id}">
+                    Remove
+                </button>
+            `;
+            
+            row.querySelector('.remove-btn').onclick = () => removeParticipant(id);
+            participantsContainer.appendChild(row);
+        }
+
+        function removeParticipant(id) {
+            const row = document.getElementById(`participant-row-${id}`);
+            if (row) {
+                row.remove();
+            }
+        }
+
+        function getParticipantsData() {
+            const rows = participantsContainer.querySelectorAll('.role-select');
+            const participants = [];
+            rows.forEach(roleSelect => {
+                const row = roleSelect.closest('.flex');
+                const nameInput = row.querySelector('.name-input');
+                const personalitySelect = row.querySelector('.personality-select');
+                
+                const roleValue = roleSelect.value;
+                const defaultRoleName = roleValue.split('(')[0].trim(); 
+                const name = nameInput.value.trim() || defaultRoleName;
+                
+                participants.push({
+                    role: roleValue,
+                    name: name, 
+                    personality: personalitySelect.value
+                });
+            });
+            return participants;
+        }
+
+        function initializeParticipants() {
+            if (!participantsContainer) return;
+            participantsContainer.innerHTML = ''; 
+            
+            createParticipantRow(1, 'CEO (Chief Executive Officer)', 'Jane Smith', 'Progressive');
+            createParticipantRow(2, 'CFO (Chief Financial Officer)', 'David Lee', 'Conservative');
+            createParticipantRow(3, '— Commodity Traders', 'Alex Chen', 'Aggressive');
+            createParticipantRow(4, 'Chief Risk Officer (CRO)', 'Sarah Patel', 'Risk-Averse');
+            createParticipantRow(5, '— Compliance Officers', 'Michael Brown', 'Compliance-Focused');
+            
+            addParticipantBtn.onclick = () => createParticipantRow(Date.now(), '— Analysts (Investment/Research)', '');
+            runMeetingBtn.addEventListener('click', runMeetingSimulation);
+
+            document.querySelectorAll('.doc-tab').forEach(btn => {
+                btn.addEventListener('click', () => renderDocument(btn.getAttribute('data-doc')));
+            });
+
+            // Set default date
+            document.getElementById('meetingDate').value = getTodayDateString();
+
+            // --- EXPORT LISTENERS ---
+            copyDocBtn.addEventListener('click', handleCopy);
+            downloadDocBtn.addEventListener('click', handleDownload);
+        }
+
+        function renderDocument(tabName) {
+  currentTab = tabName;
+  const docData = documents[tabName];
+
+  document.querySelectorAll('.doc-tab').forEach(btn => {
+    const isActive = btn.getAttribute('data-doc') === tabName;
+    btn.classList.toggle('border-emerald-500', isActive);
+    btn.classList.toggle('text-emerald-500', isActive);
+    btn.classList.toggle('border-transparent', !isActive);
+    btn.classList.toggle('text-gray-600', !isActive);
+  });
+
+  // Guard against null, undefined, empty string, or empty array
+  if (!docData || 
+      (Array.isArray(docData) && docData.length === 0) || 
+      (typeof docData === 'string' && docData.trim() === "")) {
+    documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">⚠️ No content generated yet. Try rerunning the simulation.</p>';
+    return;
+  }
+
+  if (tabName === 'script') {
+    documentOutput.innerHTML = `<div id="export-target-script" class="space-y-2 overflow-y-auto p-2">
+      ${docData.map((turn) => {
+        const speakerParts = turn.speaker.split('(');
+        const speakerName = speakerParts[0].trim();
+        const speakerRole = speakerParts.length > 1 ? `(${speakerParts[1]}` : '';
+        const { bg, text } = stringToColor(speakerName);
+        const escapedDialogue = escapeHtml(turn.dialogue);
+
+        return `
+          <div class="discussion-turn rounded-lg shadow-md border transition-all duration-100" style="background-color: ${bg}; border-color: ${text}33;">
+            <strong class="font-bold text-lg" style="color: ${text};">${escapeHtml(speakerName)}</strong>
+            <span class="text-sm text-gray-500">${escapeHtml(speakerRole)}</span>:
+            <p class="mt-1" style="color: ${text};">${escapedDialogue}</p>
+          </div>`;
+      }).join('')}
+    </div>`;
+  } else if (tabName === 'minutes') {
+    documentOutput.innerHTML = `<div id="export-target-minutes" class="whitespace-pre-wrap prose max-w-none">${marked.parse(docData)}</div>`;
+  } else if (tabName === 'decisions') {
+    documentOutput.innerHTML = `<ul id="export-target-decisions" class="list-disc pl-5 space-y-2">
+      ${docData.map(d => `<li class="p-2 bg-white rounded-md shadow-sm border border-gray-100">${escapeHtml(d)}</li>`).join('')}
+    </ul>`;
+  } else if (tabName === 'actionplan') {
+    documentOutput.innerHTML = `
+      <div id="export-target-actionplan" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-emerald-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Action Item</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Owner</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Deadline</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${docData.map(item => `
+              <tr>
+                <td class="px-6 py-4 whitespace-normal text-sm text-gray-900">${escapeHtml(item.task)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${escapeHtml(item.owner)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(item.deadline)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+}
+
+        
+        // --- Metadata Helper Functions ---
+
+        function getMeetingMetadata() {
+            const participants = getParticipantsData();
+            // Just use a simple list of names for metadata
+            const participantList = participants.map(p => p.name).join(', ');
+
+            return {
+                date: document.getElementById('meetingDate').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                place: document.getElementById('place').value.trim(),
+                title: document.getElementById('meetingTitle').value.trim(),
+                agenda: document.getElementById('agenda').value.trim(),
+                participants: participantList,
+                fullParticipants: participants
+            };
+        }
+        
+        // --- EXPORT LOGIC ---
+        function formatMetadataForPlainText(metadata) {
+            let output = `MEETING DOCUMENT: ${metadata.title}\n`;
+            output += `Document Type: ${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}\n`;
+            output += `--------------------------------------------------\n`;
+            output += `Date: ${metadata.date} | Time: ${metadata.startTime} - ${metadata.endTime}\n`;
+            output += `Place: ${metadata.place}\n`;
+            output += `\nAGENDA:\n${metadata.agenda}\n`;
+            output += `\nATTENDEES (${metadata.fullParticipants.length}):\n`;
+            metadata.fullParticipants.forEach(p => {
+                output += `- ${p.name} (${p.role}) [${p.personality}]\n`;
+            });
+            output += `\n==================================================\n\n`;
+            return output;
+        }
+
+        function generateDocumentPlainText(tabName, docData) {
+            let content = '';
+
+            if (tabName === 'script') {
+                content = docData.map(turn => `${turn.speaker}:\n  ${turn.dialogue}`).join('\n\n');
+            } else if (tabName === 'minutes') {
+                content = docData; 
+            } else if (tabName === 'decisions') {
+                content = docData.map((d, i) => `${i + 1}. ${d}`).join('\n');
+            } else if (tabName === 'actionplan') {
+                const headers = ['Action Item', 'Owner', 'Deadline'];
+                
+                // Calculate column widths
+                const colWidths = [headers[0].length, headers[1].length, headers[2].length];
+                
+                docData.forEach(item => {
+                    colWidths[0] = Math.max(colWidths[0], item.task.length);
+                    colWidths[1] = Math.max(colWidths[1], item.owner.length);
+                    colWidths[2] = Math.max(colWidths[2], item.deadline.length);
+                });
+                
+                // Add padding
+                const pad = (str, len) => str.padEnd(len, ' ');
+                
+                // Header
+                let tableText = `| ${pad(headers[0], colWidths[0])} | ${pad(headers[1], colWidths[1])} | ${pad(headers[2], colWidths[2])} |\n`;
+                // Separator
+                tableText += `|${'-'.repeat(colWidths[0] + 2)}|${'-'.repeat(colWidths[1] + 2)}|${'-'.repeat(colWidths[2] + 2)}|\n`;
+                
+                // Rows
+                docData.forEach(item => {
+                    tableText += `| ${pad(item.task, colWidths[0])} | ${pad(item.owner, colWidths[1])} | ${pad(item.deadline, colWidths[2])} |\n`;
+                });
+                
+                content = tableText;
+            }
+
+            return content;
+        }
+
+        /**
+         * Generates the complete plain text content for the currently active document tab.
+         */
+        function getCompleteDocumentContent() {
+            if (!documents[currentTab]) {
+                showMessage('No content to export. Please run the simulation first.', 'error');
+                return null;
+            }
+
+            const metadata = getMeetingMetadata();
+            const documentContent = documents[currentTab];
+            
+            const header = formatMetadataForPlainText(metadata);
+            const content = generateDocumentPlainText(currentTab, documentContent);
+            return header + content;
+        }
+        
+        /**
+         * Handles copying the document content to the clipboard.
+         */
+        function handleCopy() {
+            const finalPlainText = getCompleteDocumentContent();
+            if (!finalPlainText) return;
+
+            // Use the hidden textarea for cross-browser clipboard functionality
+            tempTextAreaForCopy.value = finalPlainText;
+            
+            // Selection is necessary for document.execCommand('copy') to work
+            tempTextAreaForCopy.select();
+            tempTextAreaForCopy.setSelectionRange(0, 99999); 
+
+            let successful = false;
+            try {
+                // Execute the copy command
+                successful = document.execCommand('copy');
+            } catch (err) {
+                console.error('Copy failed with execCommand:', err);
+            }
+            
+            // Clean up by removing the selection - do NOT remove textarea from DOM
+            window.getSelection().removeAllRanges();
+
+            if (successful) {
+                showMessage('Document content successfully copied to clipboard!', 'success');
+            } else {
+                showMessage('Failed to copy. Clipboard access may be blocked by your browser.', 'error');
+            }
+        }
+        
+        /**
+         * Handles downloading the document content as a text file.
+         */
+        function handleDownload() {
+             const finalPlainText = getCompleteDocumentContent();
+             if (!finalPlainText) return;
+             
+             const metadata = getMeetingMetadata();
+             // Create a safe filename
+             const safeTitle = metadata.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+             const filename = `${safeTitle}_${currentTab}_${metadata.date}.txt`;
+             
+             // Create a Blob and trigger download
+             const blob = new Blob([finalPlainText], { type: 'text/plain' });
+             const url = URL.createObjectURL(blob);
+             
+             const a = document.createElement('a');
+             a.href = url;
+             a.download = filename;
+             document.body.appendChild(a);
+             a.click();
+             
+             // Cleanup
+             document.body.removeChild(a);
+             URL.revokeObjectURL(url);
+        }
+
+
+        // --- LLM Logic (Simulation) ---
+        async function runMeetingSimulation() {
+            const meetingTitle = document.getElementById('meetingTitle').value.trim();
+            const agenda = document.getElementById('agenda').value.trim();
+            const participants = getParticipantsData();
+            
+            if (!meetingTitle || !agenda || participants.length === 0) {
+                showMessage('Please fill in the meeting title, agenda, and ensure at least one participant is added.', 'error');
+                return;
+            }
+
+            runMeetingBtn.disabled = true;
+            buttonText.textContent = 'Simulating...';
+            loadingIndicator.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            exportControlsSection.classList.add('hidden'); 
+            documentOutput.innerHTML = '<p class="text-center text-gray-500 py-10">Simulation in progress...</p>';
+
+
+            const participantList = participants.map(p => 
+                `${p.name} (Role: ${p.role}, Personality: ${p.personality})` 
+            ).join(', ');
+
+           const systemPrompt = `
+You are a professional corporate AI Meeting Facilitator and Scribe for a global Commodity Trading and Investment company. 
+Your task is to simulate a critical board meeting based on the provided agenda, roles, and personalities, and output the results as a single, perfectly structured JSON object.
+
+The discussion MUST reflect the specialized roles in commodity trading:
+- Front Office roles (e.g., Commodity Trader, Portfolio Manager) will push for higher returns, leverage, and new market opportunities.
+- Middle Office roles (e.g., Chief Risk Officer, Compliance Officer) will focus on risk limits, regulatory adherence, hedging strategies, and control.
+- Executive roles will focus on overall strategy, capital allocation, and stakeholder value.
+
+Simulate the full discussion flow where each participant debates, objects, and contributes according to their assigned role, division, and personality. 
+The output discussionScript MUST use the participant's NAME and Role as the speaker for each dialogue turn, formatted as "Name (Role/Division): ...".
+
+After the simulation, you MUST generate three professional corporate documents based on the outcomes. 
+Each document MUST be non-empty and professionally written:
+1. "meetingMinutes": A detailed, professional narrative summary of the discussion points, key arguments, and final resolutions. If no resolution is reached, summarize disagreements.
+2. "keyDecisions": A concise bulleted list of the final, approved decisions. If no decisions are made, explicitly state "No decisions were finalized."
+3. "actionPlan": A structured list of tasks, clear owners, and suggested deadlines for implementing the decisions. If no tasks exist, include at least one placeholder task with "TBD" owner and deadline.
+
+The output MUST be a JSON object conforming strictly to the provided schema. Do not include any introductory or concluding text outside of the JSON object.
+`;
+
+const userQuery = `
+Meeting Title: ${meetingTitle}
+Participants: ${participantList}
+Agenda: ${agenda}
+`;
+
+const responseSchema = {
+  type: "OBJECT",
+  properties: {
+    "discussionScript": {
+      type: "ARRAY",
+      description: "A chronological list of dialogue turns between the participants, showing the discussion flow.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          "speaker": { type: "STRING" }, 
+          "dialogue": { type: "STRING" }
+        },
+        required: ["speaker", "dialogue"]
+      }
+    },
+    "meetingMinutes": { 
+      type: "STRING", 
+      description: "A detailed, narrative summary of the board's discussion, arguments, and final resolutions. Must not be empty." 
+    },
+    "keyDecisions": {
+      type: "ARRAY",
+      description: "A bulleted list of the final, approved decisions from the meeting. Must contain at least one item.",
+      items: { type: "STRING" }
+    },
+    "actionPlan": {
+      type: "ARRAY",
+      description: "A structured list of tasks, owners, and deadlines for follow-up actions. Must contain at least one item.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          "task": { type: "STRING" },
+          "owner": { type: "STRING" },
+          "deadline": { type: "STRING" }
+        },
+        required: ["task", "owner", "deadline"]
+      }
+    }
+  },
+  required: ["discussionScript", "meetingMinutes", "keyDecisions", "actionPlan"]
+};
+
+const proxyPayload = {
+  prompt: `System Prompt: ${systemPrompt}\n\nUser Query: ${userQuery}`,
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: responseSchema,
+    temperature: 0.7,
+    candidateCount: 1
+  }
+};
+
+
+            try {
+                let response;
+                let maxRetries = 3;
+                
+                for (let i = 0; i < maxRetries; i++) {
+                    response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(proxyPayload)
+                    });
+
+                    if (response.ok) break; 
+
+                    if (i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        response.json().then(err => console.error("API Error Response:", err)).catch(() => {});
+                        throw new Error(`API request failed after ${maxRetries} attempts.`);
+                    }
+                }
+
+                if (!response.ok) {
+                     throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                let parsedDocuments;
+                try {
+                    const contentText = result.candidates?.[0]?.content?.parts?.[0]?.text || 
+                                      result.text || 
+                                      (typeof result === 'string' ? result : JSON.stringify(result));
+                    
+                    const cleanJsonText = contentText.replace(/```json\n?|\n?```/g, '').trim();
+
+                    parsedDocuments = JSON.parse(cleanJsonText);
+
+                } catch (e) {
+                    console.error("Failed to parse JSON response:", result);
+                    showMessage("Error: The model returned malformed JSON. This can happen with complex prompts. Please try simplifying the agenda or try again.", 'error');
+                    throw new Error("The model returned malformed JSON. Please try again.");
+                }
+
+                documents = {
+                    script: parsedDocuments.discussionScript,
+                    minutes: parsedDocuments.meetingMinutes,
+                    decisions: parsedDocuments.keyDecisions,
+                    actionplan: parsedDocuments.actionPlan
+                };
+
+                resultsSection.classList.remove('hidden');
+                exportControlsSection.classList.remove('hidden'); 
+                renderDocument('script'); 
+                showMessage('Meeting simulation complete! Documents generated.', 'success');
+
+            } catch (error) {
+                console.error("Simulation failed:", error);
+                showMessage(`Error: ${error.message || 'An unexpected error occurred during simulation.'}`, 'error');
+                resultsSection.classList.add('hidden');
+                exportControlsSection.classList.add('hidden');
+            } finally {
+                runMeetingBtn.disabled = false;
+                buttonText.textContent = 'Run Simulated Board Meeting & Generate Documents';
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        window.onload = () => {
+            initializeParticipants();
+        };
+
+    </script>
+</body>
+</html>
+
