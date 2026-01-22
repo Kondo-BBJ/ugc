@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power BI Cropped View</title>
+    <style>
+        /* INSTRUCTIONS:
+           1. Set .crop-container to the size of the box you want to show.
+           2. Adjust 'top' and 'left' on the iframe to move the content.
+           3. Adjust 'width' and 'height' on the iframe to match the source's scale.
+        */
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: transparent;
+        }
+
+        /* This is your visible window */
+        .crop-container {
+            width: 100vw;   /* Width of the final area */
+            height: 100vh;  /* Height of the final area */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .crop-container iframe {
+            position: absolute;
+            
+            /* ADJUST THESE TO CROP */
+            top: 0px;      /* Move UP to hide the header */
+            left: 0px;     /* Move LEFT to hide side margins */
+            
+            /* The actual size of the source content */
+            width: calc(100vw + 0px); 
+            height: calc(100vh + 60px); /* 50px (top) + 36px (bottom bar) */
+            
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="crop-container">
+        <iframe 
+            src="https://app.powerbi.com/view?r=eyJrIjoiZGQ1Y2QxY2ItZjE2MS00NjUwLWEzZGUtYWUwN2M2ZjU0YjU0IiwidCI6Ijc3NjhhNDZjLTEyZDAtNDAxZi1iNWM3LWU4MjE3ZTNmNzNmNyJ9&pageName=ReportSectionb885209fe568ec83a544" frameborder="0" allowFullScreen="true">
+        </iframe>
+    </div>
+
+</body>
+</html>
